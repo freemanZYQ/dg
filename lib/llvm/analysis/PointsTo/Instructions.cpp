@@ -1,4 +1,4 @@
-#include "dg/llvm/analysis/PointsTo/PointerSubgraph.h"
+#include "dg/llvm/analysis/PointsTo/PointerGraph.h"
 
 namespace dg {
 namespace analysis {
@@ -6,7 +6,7 @@ namespace pta {
 
 
 
-PSNode *LLVMPointerSubgraphBuilder::createAlloc(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createAlloc(const llvm::Instruction *Inst)
 {
     PSNodeAlloc *node = PSNodeAlloc::get(PS.create(PSNodeType::ALLOC));
     addNode(Inst, node);
@@ -18,7 +18,7 @@ PSNode *LLVMPointerSubgraphBuilder::createAlloc(const llvm::Instruction *Inst)
     return node;
 }
 
-PSNode * LLVMPointerSubgraphBuilder::createLifetimeEnd(const llvm::Instruction *Inst)
+PSNode * LLVMPointerGraphBuilder::createLifetimeEnd(const llvm::Instruction *Inst)
 {
     PSNode *op1 = getOperand(Inst->getOperand(1));
     PSNode *node = PS.create(PSNodeType::INVALIDATE_OBJECT, op1);
@@ -29,7 +29,7 @@ PSNode * LLVMPointerSubgraphBuilder::createLifetimeEnd(const llvm::Instruction *
     return node;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createStore(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createStore(const llvm::Instruction *Inst)
 {
     const llvm::Value *valOp = Inst->getOperand(0);
 
@@ -43,7 +43,7 @@ PSNode *LLVMPointerSubgraphBuilder::createStore(const llvm::Instruction *Inst)
     return node;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createLoad(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createLoad(const llvm::Instruction *Inst)
 {
     const llvm::Value *op = Inst->getOperand(0);
 
@@ -56,7 +56,7 @@ PSNode *LLVMPointerSubgraphBuilder::createLoad(const llvm::Instruction *Inst)
     return node;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createGEP(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createGEP(const llvm::Instruction *Inst)
 {
     using namespace llvm;
 
@@ -93,7 +93,7 @@ PSNode *LLVMPointerSubgraphBuilder::createGEP(const llvm::Instruction *Inst)
     return node;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createSelect(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createSelect(const llvm::Instruction *Inst)
 {
     // with ptrtoint/inttoptr it may not be a pointer
     // assert(Inst->getType()->isPointerTy() && "BUG: This select is not a pointer");
@@ -137,7 +137,7 @@ Offset accumulateEVOffsets(const llvm::ExtractValueInst *EV,
 }
 
 PSNodesSeq
-LLVMPointerSubgraphBuilder::createExtract(const llvm::Instruction *Inst)
+LLVMPointerGraphBuilder::createExtract(const llvm::Instruction *Inst)
 {
     using namespace llvm;
 
@@ -156,7 +156,7 @@ LLVMPointerSubgraphBuilder::createExtract(const llvm::Instruction *Inst)
     return ret;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createPHI(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createPHI(const llvm::Instruction *Inst)
 {
     PSNode *node = PS.create(PSNodeType::PHI, nullptr);
     addNode(Inst, node);
@@ -169,7 +169,7 @@ PSNode *LLVMPointerSubgraphBuilder::createPHI(const llvm::Instruction *Inst)
     return node;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createCast(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createCast(const llvm::Instruction *Inst)
 {
     const llvm::Value *op = Inst->getOperand(0);
     PSNode *op1 = getOperand(op);
@@ -182,7 +182,7 @@ PSNode *LLVMPointerSubgraphBuilder::createCast(const llvm::Instruction *Inst)
 }
 
 // ptrToInt work just as a bitcast
-PSNode *LLVMPointerSubgraphBuilder::createPtrToInt(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createPtrToInt(const llvm::Instruction *Inst)
 {
     const llvm::Value *op = Inst->getOperand(0);
 
@@ -199,7 +199,7 @@ PSNode *LLVMPointerSubgraphBuilder::createPtrToInt(const llvm::Instruction *Inst
     return node;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createIntToPtr(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createIntToPtr(const llvm::Instruction *Inst)
 {
     const llvm::Value *op = Inst->getOperand(0);
     PSNode *op1;
@@ -220,7 +220,7 @@ PSNode *LLVMPointerSubgraphBuilder::createIntToPtr(const llvm::Instruction *Inst
     return node;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createAdd(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createAdd(const llvm::Instruction *Inst)
 {
     using namespace llvm;
 
@@ -259,7 +259,7 @@ PSNode *LLVMPointerSubgraphBuilder::createAdd(const llvm::Instruction *Inst)
     return node;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createArithmetic(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createArithmetic(const llvm::Instruction *Inst)
 {
     using namespace llvm;
 
@@ -294,7 +294,7 @@ PSNode *LLVMPointerSubgraphBuilder::createArithmetic(const llvm::Instruction *In
     return node;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createReturn(const llvm::Instruction *Inst)
+PSNode *LLVMPointerGraphBuilder::createReturn(const llvm::Instruction *Inst)
 {
     PSNode *op1 = nullptr;
     // is nullptr if this is 'ret void'

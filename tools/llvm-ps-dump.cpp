@@ -257,7 +257,7 @@ static bool mmChanged(PSNode *n)
 }
 
 static void
-dumpPointerSubgraphData(PSNode *n, PTType type, bool dot = false)
+dumpPointerGraphData(PSNode *n, PTType type, bool dot = false)
 {
     assert(n && "No node given");
     if (type == FLOW_INSENSITIVE) {
@@ -316,7 +316,7 @@ dumpPSNode(PSNode *n, PTType type)
             printf(" + %lu\n", *ptr.offset);
     }
     if (verbose) {
-        dumpPointerSubgraphData(n, type);
+        dumpPointerGraphData(n, type);
     }
 }
 
@@ -357,7 +357,7 @@ dumpNodeToDot(PSNode *node, PTType type)
     }
 
     if (verbose) {
-        dumpPointerSubgraphData(node, type, true /* dot */);
+        dumpPointerGraphData(node, type, true /* dot */);
     }
 
     printf("\", shape=box");
@@ -389,6 +389,7 @@ dumpNodeEdgesToDot(PSNode *node)
     }
 }
 
+PSNode *getNodePtr(const PSNode *ptr) { return const_cast<PSNode *>(ptr); }
 PSNode *getNodePtr(PSNode *ptr) { return ptr; }
 PSNode *getNodePtr(const std::unique_ptr<PSNode>& ptr) { return ptr.get(); }
 
@@ -436,13 +437,13 @@ static std::vector<std::string> splitList(const std::string& opt, char sep = ','
 }
 
 static void
-dumpPointerSubgraphdot(LLVMPointerAnalysis *pta, PTType type)
+dumpPointerGraphdot(LLVMPointerAnalysis *pta, PTType type)
 {
 
     printf("digraph \"Pointer State Subgraph\" {\n");
 
     if (!display_only_func.empty()) {
-        std::set<PSNode *> nodes;
+        std::set<const PSNode *> nodes;
         for (auto llvmFunc : display_only_func) {
             auto func_nodes = pta->getFunctionNodes(llvmFunc);
             if (func_nodes.empty()) {
@@ -503,12 +504,12 @@ dumpPointerSubgraphdot(LLVMPointerAnalysis *pta, PTType type)
 }
 
 static void
-dumpPointerSubgraph(LLVMPointerAnalysis *pta, PTType type, bool todot)
+dumpPointerGraph(LLVMPointerAnalysis *pta, PTType type, bool todot)
 {
     assert(pta);
 
     if (todot)
-        dumpPointerSubgraphdot(pta, type);
+        dumpPointerGraphdot(pta, type);
     else {
         const auto& nodes = pta->getNodes();
         for (const auto& node : nodes) {
@@ -778,7 +779,7 @@ int main(int argc, char *argv[])
     }
 
     if (dump_graph_only) {
-        dumpPointerSubgraph(&PTA, type, true);
+        dumpPointerGraph(&PTA, type, true);
         return 0;
     }
 
@@ -806,7 +807,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    dumpPointerSubgraph(&PTA, type, todot);
+    dumpPointerGraph(&PTA, type, todot);
 
     return 0;
 }

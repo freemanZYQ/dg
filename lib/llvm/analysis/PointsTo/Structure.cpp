@@ -34,7 +34,7 @@
 #pragma GCC diagnostic pop
 #endif
 
-#include "dg/llvm/analysis/PointsTo/PointerSubgraph.h"
+#include "dg/llvm/analysis/PointsTo/PointerGraph.h"
 
 namespace dg {
 namespace analysis {
@@ -77,7 +77,7 @@ static size_t blockAddSuccessors(std::map<const llvm::BasicBlock *,
 }
 
 PSNodesSeq
-LLVMPointerSubgraphBuilder::buildArgumentsStructure(const llvm::Function& F)
+LLVMPointerGraphBuilder::buildArgumentsStructure(const llvm::Function& F)
 {
     PSNodesSeq seq;
     PSNode *last = nullptr;
@@ -109,7 +109,7 @@ LLVMPointerSubgraphBuilder::buildArgumentsStructure(const llvm::Function& F)
     return seq;
 }
 
-PSNodesSeq LLVMPointerSubgraphBuilder::buildBlockStructure(const llvm::BasicBlock& block)
+PSNodesSeq LLVMPointerGraphBuilder::buildBlockStructure(const llvm::BasicBlock& block)
 {
     PSNodesSeq seq = PSNodesSeq(nullptr, nullptr);
 
@@ -155,10 +155,10 @@ PSNodesSeq LLVMPointerSubgraphBuilder::buildBlockStructure(const llvm::BasicBloc
     return seq;
 }
 
-void LLVMPointerSubgraphBuilder::addProgramStructure(const llvm::Function *F,
-                                                     Subgraph& subg)
+void LLVMPointerGraphBuilder::addProgramStructure(const llvm::Function *F,
+                                                  Subgraph& subg)
 {
-    assert(subg.root && "Subgraph has no root");
+    assert(subg.getRoot() && "Subgraph has no root");
 
     // with function pointer calls it may happen that we try
     // to add structure more times, so bail out in that case
@@ -172,24 +172,24 @@ void LLVMPointerSubgraphBuilder::addProgramStructure(const llvm::Function *F,
     // are any arguments)
     if (args.first) {
         assert(args.second && "BUG: Have only first argument");
-        subg.root->addSuccessor(args.first);
+        subg.getRoot()->addSuccessor(args.first);
 
         // inset the variadic arg node into the graph if needed
         if (F->isVarArg()) {
-            assert(subg.vararg);
-            args.second->addSuccessor(subg.vararg);
-            lastNode = subg.vararg;
+            assert(subg.getVararg());
+            args.second->addSuccessor(subg.getVararg());
+            lastNode = subg.getVararg();
         } else
             lastNode = args.second;
-    } else if (subg.vararg) {
+    } else if (subg.getVararg()) {
         // this function has only ... argument
         assert(F->isVarArg());
         assert(!args.second && "BUG: Have only last argument");
-        subg.root->addSuccessor(subg.vararg);
-        lastNode = subg.vararg;
+        subg.getRoot()->addSuccessor(subg.getVararg());
+        lastNode = subg.getVararg();
     } else {
         assert(!args.second && "BUG: Have only last argument");
-        lastNode = subg.root;
+        lastNode = subg.getRoot();
     }
 
     assert(lastNode);
@@ -205,7 +205,7 @@ void LLVMPointerSubgraphBuilder::addProgramStructure(const llvm::Function *F,
     PSNodesSeq& enblk = built_blocks[entry];
     if (!enblk.first) {
         assert(!enblk.second);
-        enblk.first = subg.root;
+        enblk.first = subg.getRoot();
         enblk.second = lastNode;
     } else {
         // if we have the entry block, just make it the successor
@@ -245,7 +245,7 @@ void LLVMPointerSubgraphBuilder::addProgramStructure(const llvm::Function *F,
     // so this assertion must not hold
     //assert(!rets.empty() && "BUG: Did not find any return node in function");
     for (PSNode *r : rets) {
-        r->addSuccessor(subg.ret);
+        r->addSuccessor(subg.getRet());
     }
 
     subg.has_structure = true;

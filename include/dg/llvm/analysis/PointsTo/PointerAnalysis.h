@@ -20,31 +20,31 @@
 #pragma GCC diagnostic pop
 #endif
 
-#include "dg/analysis/PointsTo/PointerSubgraph.h"
+#include "dg/analysis/PointsTo/PointerGraph.h"
 #include "dg/analysis/PointsTo/PointerAnalysis.h"
-#include "dg/analysis/PointsTo/PointerSubgraphOptimizations.h"
+#include "dg/analysis/PointsTo/PointerGraphOptimizations.h"
 #include "dg/analysis/PointsTo/PointerAnalysisFSInv.h"
 
 #include "dg/llvm/analysis/PointsTo/LLVMPointerAnalysisOptions.h"
-#include "dg/llvm/analysis/PointsTo/PointerSubgraph.h"
+#include "dg/llvm/analysis/PointsTo/PointerGraph.h"
 
 
 namespace dg {
 
 using analysis::LLVMPointerAnalysisOptions;
-using analysis::pta::PointerSubgraph;
+using analysis::pta::PointerGraph;
 using analysis::pta::PSNode;
-using analysis::pta::LLVMPointerSubgraphBuilder;
+using analysis::pta::LLVMPointerGraphBuilder;
 using analysis::pta::PSNodesSeq;
 using analysis::Offset;
 
 template <typename PTType>
 class LLVMPointerAnalysisImpl : public PTType
 {
-    LLVMPointerSubgraphBuilder *builder;
+    LLVMPointerGraphBuilder *builder;
 
 public:
-    LLVMPointerAnalysisImpl(PointerSubgraph *PS, LLVMPointerSubgraphBuilder *b)
+    LLVMPointerAnalysisImpl(PointerGraph *PS, LLVMPointerGraphBuilder *b)
     : PTType(PS), builder(b) {}
 
     // build new subgraphs on calls via pointer
@@ -63,7 +63,7 @@ public:
             return callsite->getPairedNode()->addPointsTo(analysis::pta::PointerUnknown);
         }
 
-        if (!LLVMPointerSubgraphBuilder::callIsCompatible(callsite, called))
+        if (!LLVMPointerGraphBuilder::callIsCompatible(callsite, called))
             return false;
 
         builder->insertFunctionCall(callsite, called);
@@ -85,8 +85,8 @@ public:
 
 class LLVMPointerAnalysis
 {
-    PointerSubgraph *PS = nullptr;
-    std::unique_ptr<LLVMPointerSubgraphBuilder> _builder;
+    PointerGraph *PS = nullptr;
+    std::unique_ptr<LLVMPointerGraphBuilder> _builder;
 
     LLVMPointerAnalysisOptions createOptions(const char *entry_func,
                                              uint64_t field_sensitivity)
@@ -105,7 +105,7 @@ public:
         : LLVMPointerAnalysis(m, createOptions(entry_func, field_sensitivity)) {}
 
     LLVMPointerAnalysis(const llvm::Module *m, const LLVMPointerAnalysisOptions opts)
-        : _builder(new LLVMPointerSubgraphBuilder(m, opts)) {}
+        : _builder(new LLVMPointerGraphBuilder(m, opts)) {}
 
     PSNode *getPointsTo(const llvm::Value *val)
     {
@@ -123,26 +123,26 @@ public:
         return PS->getNodes();
     }
 
-    std::vector<PSNode *> getFunctionNodes(const llvm::Function *F) const {
-        return _builder->getFunctionNodes(F);
+    std::vector<const PSNode *> getFunctionNodes(const llvm::Function *F) const {
+        return _builder->getFunctionNodes<const PSNode>(F);
     }
 
-    PointerSubgraph *getPS() { return PS; }
-    const PointerSubgraph *getPS() const { return PS; }
+    PointerGraph *getPS() { return PS; }
+    const PointerGraph *getPS() const { return PS; }
 
     void buildSubgraph()
     {
         // run the analysis itself
         assert(_builder && "Incorrectly constructed PTA, missing builder");
 
-        PS = _builder->buildLLVMPointerSubgraph();
+        PS = _builder->buildLLVMPointerGraph();
         if (!PS) {
             llvm::errs() << "Pointer Subgraph was not built, aborting\n";
             abort();
         }
 
 /*
-        analysis::pta::PointerSubgraphOptimizer optimizer(PS);
+        analysis::pta::PointerGraphOptimizer optimizer(PS);
         optimizer.run();
 
         if (optimizer.getNumOfRemovedNodes() > 0)
@@ -151,7 +151,7 @@ public:
         llvm::errs() << "PS optimization removed " << optimizer.getNumOfRemovedNodes() << " nodes\n";
 
 #ifndef NDEBUG
-        analysis::pta::debug::LLVMPointerSubgraphValidator validator(_builder->getPS());
+        analysis::pta::debug::LLVMPointerGraphValidator validator(_builder->getPS());
         if (validator.validate()) {
             llvm::errs() << "Pointer Subgraph is broken!\n";
             llvm::errs() << "This happend after optimizing the graph.";
@@ -176,7 +176,7 @@ public:
     // this method creates PointerAnalysis object and returns it.
     // It is alternative to run() method, but it does not delete all
     // the analysis data as the run() (like memory objects and so on).
-    // run() preserves only PointerSubgraph and the builder
+    // run() preserves only PointerGraph and the builder
     template <typename PTType>
     analysis::pta::PointerAnalysis *createPTA()
     {

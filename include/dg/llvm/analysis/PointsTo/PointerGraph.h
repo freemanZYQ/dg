@@ -26,7 +26,7 @@
 
 #include "dg/llvm/analysis/PointsTo/LLVMPointerAnalysisOptions.h"
 
-#include "dg/analysis/PointsTo/PointerSubgraph.h"
+#include "dg/analysis/PointsTo/PointerGraph.h"
 #include "dg/analysis/PointsTo/PointsToMapping.h"
 #include "dg/analysis/PointsTo/Pointer.h"
 
@@ -38,9 +38,9 @@ namespace pta {
 
 using PSNodesSeq = std::pair<PSNode *, PSNode *>;
 
-class LLVMPointerSubgraphBuilder
+class LLVMPointerGraphBuilder
 {
-    PointerSubgraph PS{};
+    PointerGraph PS{};
     // mapping from llvm values to PSNodes that contain
     // the points-to information
     PointsToMapping<const llvm::Value *> mapping;
@@ -59,35 +59,27 @@ class LLVMPointerSubgraphBuilder
     bool invalidate_nodes = false;
 
     struct Subgraph {
-        Subgraph(PSNode *r1, PSNode *r2, PSNode *va = nullptr)
-            : root(r1), ret(r2), vararg(va) {}
-        /*
-        Subgraph(PSNode *r1, PSNode *r2, PSNode *va,
-                 std::vector<const llvm::BasicBlock *>&& blcks)
-            : root(r1), ret(r2), vararg(va), llvmBlocks(blcks) {}
-            */
-        Subgraph() = default;
-        Subgraph(Subgraph&&) = default;
-        Subgraph(const Subgraph&) = delete;
-
-        // first and last nodes of the subgraph
-        PSNode *root{nullptr};
-        PSNode *ret{nullptr};
-
-        // this is the node where we gather the variadic-length arguments
-        PSNode *vararg{nullptr};
-
+        PointerSubgraph *subgraph{nullptr};
         // reachable LLVM block (those block for which we built the instructions)
-        std::vector<const llvm::BasicBlock *> llvmBlocks;
+        std::vector<const llvm::BasicBlock *> llvmBlocks{};
         bool has_structure = false;
+
+        PSNode *getRoot() { return subgraph->getRoot(); }
+        PSNode *getRet() { return subgraph->getRet(); }
+        PSNode *getVararg() { return subgraph->getVararg(); }
+        const PSNode *getRoot() const { return subgraph->getRoot(); }
+        const PSNode *getRet() const { return subgraph->getRet(); }
+        const PSNode *getVararg() const { return subgraph->getVararg(); }
     };
+
+    std::map<const llvm::Function *, Subgraph> subgraphs;
 
     // build pointer state subgraph for given graph
     // \return   root node of the graph
     Subgraph& buildFunction(const llvm::Function& F);
     PSNodesSeq buildInstruction(const llvm::Instruction&);
 
-    PSNodesSeq buildPointerSubgraphBlock(const llvm::BasicBlock& block,
+    PSNodesSeq buildPointerGraphBlock(const llvm::BasicBlock& block,
                                          PSNode *parent);
 
     void buildArguments(const llvm::Function& F,
@@ -111,14 +103,14 @@ class LLVMPointerSubgraphBuilder
     std::map<const llvm::BasicBlock *, PSNodesSeq> built_blocks;
 
 public:
-    const PointerSubgraph *getPS() const { return &PS; }
+    const PointerGraph *getPS() const { return &PS; }
 
-    LLVMPointerSubgraphBuilder(const llvm::Module *m, const LLVMPointerAnalysisOptions& opts)
+    LLVMPointerGraphBuilder(const llvm::Module *m, const LLVMPointerAnalysisOptions& opts)
         : M(m), DL(new llvm::DataLayout(m)), _options(opts) {}
 
-    ~LLVMPointerSubgraphBuilder();
+    ~LLVMPointerGraphBuilder();
 
-    PointerSubgraph *buildLLVMPointerSubgraph();
+    PointerGraph *buildLLVMPointerGraph();
 
     bool validateSubgraph(bool no_connectivity = false) const;
 
@@ -138,7 +130,25 @@ public:
     const std::unordered_map<const llvm::Value *, PSNodesSeq>&
                                 getNodesMap() const { return nodes_map; }
 
-    std::vector<PSNode *> getFunctionNodes(const llvm::Function *F) const;
+    template <typename NodeT>
+    std::vector<NodeT *> getFunctionNodes(const llvm::Function *F) const
+    {
+        auto it = subgraphs_map.find(F);
+        if (it == subgraphs_map.end())
+            return {};
+
+        const Subgraph& subg = it->second;
+        auto nodes = getReachableNodes(subg.getRoot(), subg.getRet());
+
+        // Filter the nodes just to those that are from the function.
+        // We cannot do it when getting the nodes as the procedures
+        // are fully inlined.
+        std::vector<NodeT *> ret;
+        std::copy_if(nodes.begin(), nodes.end(), std::back_inserter(ret),
+                     [&subg](NodeT *node){return node->getParent() == subg.getRoot();} );
+
+        return ret;
+    }
 
     // this is the same as the getNode, but it
     // creates ConstantExpr
@@ -153,7 +163,7 @@ public:
 
     void setInvalidateNodesFlag(bool value) 
     {
-        assert(PS.getRoot() == nullptr &&
+        assert(PS.getEntry() == nullptr &&
                 "This function must be called before building PS");
         this->invalidate_nodes = value;
     }

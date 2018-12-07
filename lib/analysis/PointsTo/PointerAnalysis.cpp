@@ -1,6 +1,6 @@
 #include "dg/analysis/PointsTo/Pointer.h"
 #include "dg/analysis/PointsTo/PointsToSet.h"
-#include "dg/analysis/PointsTo/PointerSubgraph.h"
+#include "dg/analysis/PointsTo/PointerGraph.h"
 #include "dg/analysis/PointsTo/PointerAnalysis.h"
 
 namespace dg {
@@ -434,7 +434,7 @@ void PointerAnalysis::sanityCheck() {
     assert(INVALIDATED->pointsTo.empty()
            && "Unknown memory has been assigned a pointer");
 
-    auto nodes = PS->getNodes(PS->getRoot());
+    const auto& nodes = PS->getNodes(PS->getEntry()->getRoot());
     std::set<unsigned> ids;
     for (auto nd : nodes) {
         assert(ids.insert(nd->getID()).second && "Duplicated node ID");

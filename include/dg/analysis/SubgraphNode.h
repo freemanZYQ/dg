@@ -2,7 +2,7 @@
 #define _SUBGRAPH_NODE_H_
 
 // This file defines a basis for nodes from
-// PointerSubgraph and reaching definitions subgraph.
+// PointerGraph and reaching definitions subgraph.
 
 #ifndef NDEBUG
 #include <iostream>
@@ -203,8 +203,8 @@ public:
         return nullptr;
     }
 
-    // insert this node in PointerSubgraph after n
-    // this node must not be in any PointerSubgraph
+    // insert this node in PointerGraph after n
+    // this node must not be in any PointerGraph
     void insertAfter(NodeT *n) {
         assert(n && "Passed nullptr as the node");
         assert(predecessorsNum() == 0);
@@ -225,8 +225,8 @@ public:
         }
     }
 
-    // insert this node in PointerSubgraph before n
-    // this node must not be in any PointerSubgraph
+    // insert this node in PointerGraph before n
+    // this node must not be in any PointerGraph
     void insertBefore(NodeT *n) {
         assert(n && "Passed nullptr as the node");
         assert(predecessorsNum() == 0);
@@ -247,10 +247,10 @@ public:
         }
     }
 
-    // insert a sequence before this node in PointerSubgraph
+    // insert a sequence before this node in PointerGraph
     void insertSequenceBefore(std::pair<NodeT *, NodeT *>& seq) {
         assert(seq.first && seq.second && "Passed nullptr in the sequence");
-        // the sequence must not be inserted in any PointerSubgraph
+        // the sequence must not be inserted in any PointerGraph
         assert(seq.first->predecessorsNum() == 0);
         assert(seq.second->successorsNum() == 0);
 

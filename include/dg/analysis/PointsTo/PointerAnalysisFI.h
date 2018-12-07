@@ -22,7 +22,7 @@ protected:
     PointerAnalysisFI() = default;
 
 public:
-    PointerAnalysisFI(PointerSubgraph *ps)
+    PointerAnalysisFI(PointerGraph *ps)
     : PointerAnalysis(ps) {
         memory_objects.reserve(std::max(ps->size() / 100, static_cast<size_t>(8)));
     }

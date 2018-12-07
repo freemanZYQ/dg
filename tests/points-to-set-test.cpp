@@ -2,13 +2,13 @@
 #include "catch.hpp"
 
 #include "dg/analysis/PointsTo/PSNode.h"
-#include "dg/analysis/PointsTo/PointerSubgraph.h"
+#include "dg/analysis/PointsTo/PointerGraph.h"
 #include "dg/analysis/PointsTo/Pointer.h"
 
 using dg::analysis::pta::PSNode;
 using dg::analysis::pta::PSNodeType;
 using dg::analysis::pta::Pointer;
-using dg::analysis::pta::PointerSubgraph;
+using dg::analysis::pta::PointerGraph;
 using dg::analysis::pta::PointsToSet;
 
 TEST_CASE("Querying empty set", "PointsToSet") {
@@ -19,7 +19,7 @@ TEST_CASE("Querying empty set", "PointsToSet") {
 
 TEST_CASE("Add an element", "PointsToSet") {
     PointsToSet B;
-    PointerSubgraph PS;
+    PointerGraph PS;
     PSNode* A = PS.create(PSNodeType::ALLOC);
     B.add(Pointer(A, 0));
     REQUIRE(*(B.begin()) == Pointer(A, 0));
@@ -27,7 +27,7 @@ TEST_CASE("Add an element", "PointsToSet") {
 
 TEST_CASE("Add few elements", "PointsToSet") {
     PointsToSet S;
-    PointerSubgraph PS;
+    PointerGraph PS;
     PSNode* A = PS.create(PSNodeType::ALLOC);
     REQUIRE(S.add(Pointer(A, 0)) == true);
     REQUIRE(S.add(Pointer(A, 20)) == true);
@@ -42,7 +42,7 @@ TEST_CASE("Add few elements", "PointsToSet") {
 
 TEST_CASE("Add few elements 2", "PointsToSet") {
     PointsToSet S;
-    PointerSubgraph PS;
+    PointerGraph PS;
     PSNode* A = PS.create(PSNodeType::ALLOC);
     PSNode* B = PS.create(PSNodeType::ALLOC);
     REQUIRE(S.add(Pointer(A, 0)) == true);
@@ -69,7 +69,7 @@ TEST_CASE("Add few elements 2", "PointsToSet") {
 TEST_CASE("Merge points-to sets", "PointsToSet") {
     PointsToSet S1;
     PointsToSet S2;
-    PointerSubgraph PS;
+    PointerGraph PS;
     PSNode* A = PS.create(PSNodeType::ALLOC);
     PSNode* B = PS.create(PSNodeType::ALLOC);
 

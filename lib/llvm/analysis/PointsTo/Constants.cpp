@@ -1,10 +1,10 @@
-#include "dg/llvm/analysis/PointsTo/PointerSubgraph.h"
+#include "dg/llvm/analysis/PointsTo/PointerGraph.h"
 
 namespace dg {
 namespace analysis {
 namespace pta {
 
-Pointer LLVMPointerSubgraphBuilder::handleConstantPtrToInt(const llvm::PtrToIntInst *P2I)
+Pointer LLVMPointerGraphBuilder::handleConstantPtrToInt(const llvm::PtrToIntInst *P2I)
 {
     using namespace llvm;
 
@@ -17,7 +17,7 @@ Pointer LLVMPointerSubgraphBuilder::handleConstantPtrToInt(const llvm::PtrToIntI
     return *op->pointsTo.begin();
 }
 
-Pointer LLVMPointerSubgraphBuilder::handleConstantIntToPtr(const llvm::IntToPtrInst *I2P)
+Pointer LLVMPointerGraphBuilder::handleConstantIntToPtr(const llvm::IntToPtrInst *I2P)
 {
     using namespace llvm;
 
@@ -35,7 +35,7 @@ Pointer LLVMPointerSubgraphBuilder::handleConstantIntToPtr(const llvm::IntToPtrI
     return *op->pointsTo.begin();
 }
 
-Pointer LLVMPointerSubgraphBuilder::handleConstantAdd(const llvm::Instruction *Inst)
+Pointer LLVMPointerGraphBuilder::handleConstantAdd(const llvm::Instruction *Inst)
 {
     using namespace llvm;
 
@@ -73,7 +73,7 @@ Pointer LLVMPointerSubgraphBuilder::handleConstantAdd(const llvm::Instruction *I
         return Pointer(ptr.target, ptr.offset + off);
 }
 
-Pointer LLVMPointerSubgraphBuilder::handleConstantArithmetic(const llvm::Instruction *Inst)
+Pointer LLVMPointerGraphBuilder::handleConstantArithmetic(const llvm::Instruction *Inst)
 {
     using namespace llvm;
 
@@ -100,7 +100,7 @@ Pointer LLVMPointerSubgraphBuilder::handleConstantArithmetic(const llvm::Instruc
     return Pointer(ptr.target, Offset::UNKNOWN);
 }
 
-Pointer LLVMPointerSubgraphBuilder::handleConstantBitCast(const llvm::BitCastInst *BC)
+Pointer LLVMPointerGraphBuilder::handleConstantBitCast(const llvm::BitCastInst *BC)
 {
     using namespace llvm;
 
@@ -120,7 +120,7 @@ Pointer LLVMPointerSubgraphBuilder::handleConstantBitCast(const llvm::BitCastIns
     return *op->pointsTo.begin();
 }
 
-Pointer LLVMPointerSubgraphBuilder::handleConstantGep(const llvm::GetElementPtrInst *GEP)
+Pointer LLVMPointerGraphBuilder::handleConstantGep(const llvm::GetElementPtrInst *GEP)
 {
     using namespace llvm;
 
@@ -149,7 +149,7 @@ Pointer LLVMPointerSubgraphBuilder::handleConstantGep(const llvm::GetElementPtrI
     return pointer;
 }
 
-Pointer LLVMPointerSubgraphBuilder::getConstantExprPointer(const llvm::ConstantExpr *CE)
+Pointer LLVMPointerGraphBuilder::getConstantExprPointer(const llvm::ConstantExpr *CE)
 {
     using namespace llvm;
 
@@ -203,7 +203,7 @@ Pointer LLVMPointerSubgraphBuilder::getConstantExprPointer(const llvm::ConstantE
     return pointer;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createConstantExpr(const llvm::ConstantExpr *CE)
+PSNode *LLVMPointerGraphBuilder::createConstantExpr(const llvm::ConstantExpr *CE)
 {
     Pointer ptr = getConstantExprPointer(CE);
     PSNode *node = PS.create(PSNodeType::CONSTANT, ptr.target, ptr.offset);
@@ -214,7 +214,7 @@ PSNode *LLVMPointerSubgraphBuilder::createConstantExpr(const llvm::ConstantExpr 
     return node;
 }
 
-PSNode *LLVMPointerSubgraphBuilder::createUnknown(const llvm::Value *val)
+PSNode *LLVMPointerGraphBuilder::createUnknown(const llvm::Value *val)
 {
     // nothing better we can do, these operations
     // completely change the value of pointer...
