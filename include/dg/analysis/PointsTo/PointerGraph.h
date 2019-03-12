@@ -16,7 +16,7 @@ namespace dg {
 namespace analysis {
 namespace pta {
 
-class PointerSubgraph
+class PointerGraph
 {
     unsigned int dfsnum;
 
@@ -35,7 +35,7 @@ class PointerSubgraph
     GenericCallGraph<PSNode *> callGraph;
 
 public:
-    PointerSubgraph() : dfsnum(0), root(nullptr) {
+    PointerGraph() : dfsnum(0), root(nullptr) {
         // nodes[0] represents invalid node (the node with id 0)
         nodes.emplace_back(nullptr);
     }
@@ -49,10 +49,10 @@ public:
     const NodesT& getNodes() const { return nodes; }
     size_t size() const { return nodes.size(); }
 
-    PointerSubgraph(PointerSubgraph&&) = default;
-    PointerSubgraph& operator=(PointerSubgraph&&) = default;
-    PointerSubgraph(const PointerSubgraph&) = delete;
-    PointerSubgraph operator=(const PointerSubgraph&) = delete;
+    PointerGraph(PointerGraph&&) = default;
+    PointerGraph& operator=(PointerGraph&&) = default;
+    PointerGraph(const PointerGraph&) = delete;
+    PointerGraph operator=(const PointerGraph&) = delete;
 
     PSNode *getRoot() const { return root; }
     void setRoot(PSNode *r) {
