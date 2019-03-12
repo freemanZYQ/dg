@@ -34,7 +34,7 @@
 #endif
 
 
-#include "dg/llvm/analysis/PointsTo/PointerSubgraph.h"
+#include "dg/llvm/analysis/PointsTo/PointerGraph.h"
 
 #include "llvm/analysis/ReachingDefinitions/LLVMRDBuilderDense.h"
 #include "llvm/llvm-utils.h"
