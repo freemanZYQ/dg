@@ -138,19 +138,21 @@ PSNode *LLVMPointerGraphBuilder::getOperand(const llvm::Value *val)
 
 PSNodesSeq
 LLVMPointerGraphBuilder::createCallToFunction(const llvm::CallInst *CInst,
-                                                 const llvm::Function *F)
+                                              const llvm::Function *F)
 {
     PSNodeCall *callNode = PSNodeCall::get(PS.create(PSNodeType::CALL));
 
-    // reuse built subgraphs if available
+    // find or build the subgraph for the function F
     PointerSubgraph& subg = createOrGetSubgraph(F);
-    // we took the subg by reference, so it should be filled now
-    assert(subg.root);
+    assert(subg.root); // we took the subg by reference, so it should be filled now
 
-    // add an edge from last argument to root of the subgraph
-    // and from the subprocedure return node (which is one - unified
-    // for all return nodes) to return from the call
-    callNode->addSuccessor(subg.root);
+    // setup call edges
+    callNode->addCallee(&subg);
+    if (PSNodeEntry *ent = PSNodeEntry::get(subg.root)) {
+        ent->addCaller(callNode);
+    } else {
+        assert(false && "Root is not an entry node");
+    }
 
     // update callgraph
     auto cinstg = subgraphs_map[CInst->getParent()->getParent()];
@@ -161,12 +163,19 @@ LLVMPointerGraphBuilder::createCallToFunction(const llvm::CallInst *CInst,
 
     // the operands to the return node (which works as a phi node)
     // are going to be added when the subgraph is built
-    PSNode *returnNode = nullptr;
-    if (subg.ret) {
-        returnNode = PS.create(PSNodeType::CALL_RETURN, nullptr);
+    PSNodeCallRet *returnNode = nullptr;
+    if (!subg.returnNodes.empty()) {
+        returnNode = PSNodeCallRet::get(PS.create(PSNodeType::CALL_RETURN, nullptr));
+        assert(returnNode);
+
+        callNode->addSuccessor(returnNode);
+
         returnNode->setPairedNode(callNode);
         callNode->setPairedNode(returnNode);
-        subg.ret->addSuccessor(returnNode);
+        for (auto ret : subg.returnNodes) {
+            assert(PSNodeRet::get(ret));
+            PSNodeRet::get(ret)->addReturnSite(returnNode);
+        }
     } else {
         callNode->setPairedNode(callNode);
     }
@@ -703,11 +712,11 @@ LLVMPointerGraphBuilder::buildFunction(const llvm::Function& F)
     // add record to built graphs here, so that subsequent call of this function
     // from buildPointerGraphBlock won't get stuck in infinite recursive call
     // when this function is recursive
-    PointerSubgraph *subg = PS.createSubgraph(root, nullptr, vararg);
+    PointerSubgraph *subg = PS.createSubgraph(root, vararg);
     assert((subgraphs_map.find(&F) == subgraphs_map.end()) && "Already had this element");
     subgraphs_map[&F] = subg;
 
-    assert(subg->root == root && subg->ret == nullptr && subg->vararg == vararg);
+    assert(subg->root == root && subg->vararg == vararg);
 
     assert(_funcInfo.find(&F) == _funcInfo.end());
     auto& finfo = _funcInfo[&F];
@@ -723,21 +732,6 @@ LLVMPointerGraphBuilder::buildFunction(const llvm::Function& F)
             (seq.second->getType() == PSNodeType::RETURN)) {
             subg->returnNodes.insert(seq.second);
         }
-    }
-
-    // If we have some return, then create the unified return node.
-    // Otherwise this function does not return and the building
-    // process will terminate here.
-    if (subg->returnNodes.size() > 0) {
-        PSNode *ret;
-        if (invalidate_nodes) {
-            ret = PS.create(PSNodeType::INVALIDATE_LOCALS, root);
-        } else {
-            ret = PS.create(PSNodeType::NOOP);
-        }
-
-        ret->setParent(root);
-        subg->ret = ret;
     }
 
     // add operands to PHI nodes. It must be done after all blocks are
@@ -853,36 +847,34 @@ void LLVMPointerGraphBuilder::addVariadicArgumentOperands(const llvm::Function *
     }
 }
 
-void LLVMPointerGraphBuilder::addReturnNodeOperands(const llvm::Function *F,
-                                                       PSNode *ret,
-                                                       PSNode *callNode)
+void LLVMPointerGraphBuilder::addReturnNodesOperands(const llvm::Function *F,
+                                                     PointerSubgraph& subg,
+                                                     PSNode *callNode)
 {
     using namespace llvm;
 
-    for (PSNode *r : ret->getPredecessors()) {
-        // return node is like a PHI node,
-        // we must add the operands too.
+    for (PSNode *r : subg.returnNodes) {
+        // call-return node is like a PHI node
         // But we're interested only in the nodes that return some value
-        // from subprocedure, not for all nodes that have no successor
-        if (r->getType() == PSNodeType::RETURN) {
-            if (callNode) {
-                addReturnNodeOperand(callNode, r);
-            } else {
-                addReturnNodeOperand(F, r);
-            }
+        // from subprocedure, not for all nodes that have no successor.
+        if (callNode) {
+            addReturnNodeOperand(callNode, r);
+        } else {
+            addReturnNodeOperand(F, r);
         }
     }
 }
 
-void LLVMPointerGraphBuilder::addReturnNodeOperand(PSNode *callNode, PSNode *op)
-{
-    PSNode *returnNode = callNode->getPairedNode();
+void LLVMPointerGraphBuilder::addReturnNodeOperand(PSNode *callNode, PSNode *op) {
+    PSNode *callReturn = callNode->getPairedNode();
     // the function must be defined, since we have the return node,
     // so there must be associated the return node
-    assert(returnNode);
+    assert(callReturn);
+    assert(callReturn != callNode);
+    assert(callReturn->getType() == PSNodeType::CALL_RETURN);
 
-    if (!returnNode->hasOperand(op))
-        returnNode->addOperand(op);
+    if (!callReturn->hasOperand(op))
+        callReturn->addOperand(op);
 }
 
 
@@ -901,7 +893,7 @@ void LLVMPointerGraphBuilder::addReturnNodeOperand(const llvm::Function *F, PSNo
         if (CI && CI->getCalledFunction() == F) {
             PSNode *callNode = getNode(CI);
             // since we're building the graph from entry only where we can reach it,
-            // we may not have all call-sites of a function
+            // we may not have all call-sites of this function
             if (!callNode)
                 continue;
 
@@ -935,8 +927,8 @@ void LLVMPointerGraphBuilder::addInterproceduralOperands(const llvm::Function *F
             addVariadicArgumentOperands(F, subg.vararg);
     }
 
-    if (subg.ret) {
-        addReturnNodeOperands(F, subg.ret, callNode);
+    if (!subg.returnNodes.empty()) {
+        addReturnNodesOperands(F, subg, callNode);
     }
 }
 
@@ -1013,7 +1005,7 @@ LLVMPointerGraphBuilder::getFunctionNodes(const llvm::Function *F) const
         return {};
 
     const PointerSubgraph *subg = it->second;
-    auto nodes = getReachableNodes(subg->root, subg->ret);
+    auto nodes = getReachableNodes(subg->root, nullptr, false /*interproc */);
 
     // Filter the nodes just to those that are from the function.
     // We cannot do it when getting the nodes as the procedures

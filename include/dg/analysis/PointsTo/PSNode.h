@@ -442,6 +442,7 @@ public:
 
 class PSNodeEntry : public PSNode {
     std::string functionName;
+    std::vector<PSNode *> callers;
 
 public:
     PSNodeEntry(unsigned id, const std::string& name = "not-known")
@@ -454,10 +455,26 @@ public:
 
     void setFunctionName(const std::string& name) { functionName = name; }
     const std::string& getFunctionName() const { return functionName; }
+
+    const std::vector<PSNode *>& getCallers() const { return callers; }
+
+    bool addCaller(PSNode *n) {
+        // we suppose there are just few callees,
+        // so this should be faster than std::set
+        for (auto p : callers) {
+            if (p == n)
+                return false;
+        }
+
+        callers.push_back(n);
+        return true;
+    }
 };
 
+class PointerSubgraph;
+
 class PSNodeCall : public PSNode {
-    std::vector<PointerGraph *> callees;
+    std::vector<PointerSubgraph *> callees;
 
 public:
     PSNodeCall(unsigned id)
@@ -468,17 +485,45 @@ public:
             static_cast<PSNodeCall *>(n) : nullptr;
     }
 
-    const std::vector<PointerGraph *>& getCallees() const { return callees; }
+    const std::vector<PointerSubgraph *>& getCallees() const { return callees; }
 
-    bool addCalee(PointerGraph *ps) {
+    bool addCallee(PointerSubgraph *ps) {
         // we suppose there are just few callees,
         // so this should be faster than std::set
-        for (PointerGraph *p : callees) {
+        for (PointerSubgraph *p : callees) {
             if (p == ps)
                 return false;
         }
 
         callees.push_back(ps);
+        return true;
+    }
+};
+
+class PSNodeCallRet : public PSNode {
+    // return nodes that go to this call-return node
+    std::vector<PSNode *> returns;
+
+public:
+    PSNodeCallRet(unsigned id, va_list args)
+    :PSNode(id, PSNodeType::CALL_RETURN, args) {}
+
+    static PSNodeCallRet *get(PSNode *n) {
+        return isa<PSNodeType::CALL_RETURN>(n) ?
+            static_cast<PSNodeCallRet *>(n) : nullptr;
+    }
+
+    const std::vector<PSNode *>& getReturns() const { return returns; }
+
+    bool addReturn(PSNode *p) {
+        // we suppose there are just few callees,
+        // so this should be faster than std::set
+        for (auto r : returns) {
+            if (p == r)
+                return false;
+        }
+
+        returns.push_back(p);
         return true;
     }
 };
@@ -509,6 +554,23 @@ public:
         returns.push_back(r);
         return true;
     }
+
+#ifndef NDEBUG
+    // verbose dump
+    void dumpv() const override {
+        PSNode::dumpv();
+        std::cout << "Returns from: [";
+        int n = 0;
+        for (const auto op : returns) {
+            if (++n > 1)
+                std::cout << ", ";
+            op->dump();
+        }
+        std::cout << "]";
+        std::cout << "\n";
+    }
+#endif // not NDEBUG
+
 };
 
 class PSNodeFork;

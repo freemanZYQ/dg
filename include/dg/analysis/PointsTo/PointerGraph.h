@@ -11,6 +11,7 @@
 #include <cstdarg>
 #include <vector>
 #include <memory>
+#include <functional>
 
 namespace dg {
 namespace analysis {
@@ -24,9 +25,8 @@ class PointerSubgraph {
 
     unsigned _id{0};
 
-    PointerSubgraph(unsigned id, PSNode *r1,
-                    PSNode *r2 = nullptr, PSNode *va = nullptr)
-        : _id(id), root(r1), ret(r2), vararg(va) {}
+    PointerSubgraph(unsigned id, PSNode *r1, PSNode *va = nullptr)
+        : _id(id), root(r1), vararg(va) {}
 
     PointerSubgraph() = default;
     PointerSubgraph(const PointerSubgraph&) = delete;
@@ -36,11 +36,13 @@ public:
 
     unsigned getID() const { return _id; }
 
-    // first and last nodes of the subgraph
+    // first nodes of the subgraph
+	// FIXME: rename to 'entry'
     PSNode *root{nullptr};
-    PSNode *ret{nullptr};
 
-    std::set<PSNode *> returnNodes;
+	// return nodes of this graph
+    std::set<PSNode *> returnNodes{};
+
     // this is the node where we gather the variadic-length arguments
     PSNode *vararg{nullptr};
 };
@@ -122,11 +124,11 @@ public:
         nodes[nd->getID()].reset();
     }
 
-    PointerSubgraph *createSubgraph(PSNode *root, PSNode *ret = nullptr,
+    PointerSubgraph *createSubgraph(PSNode *root,
                                     PSNode *vararg = nullptr) {
         // NOTE: id of the subgraph is always index in _subgraphs + 1
         _subgraphs.emplace_back(new PointerSubgraph(_subgraphs.size() + 1,
-                                                    root, ret, vararg));
+                                                    root, vararg));
         return _subgraphs.back().get();
     }
 
@@ -171,6 +173,9 @@ public:
             case PSNodeType::RETURN:
                 node = new PSNodeRet(getNewNodeId(), args);
                 break;
+            case PSNodeType::CALL_RETURN:
+                node = new PSNodeCallRet(getNewNodeId(), args);
+                break;
             default:
                 node = new PSNode(getNewNodeId(), t, args);
                 break;
@@ -186,6 +191,7 @@ public:
     // the container
     template <typename ContainerOrNode>
     std::vector<PSNode *> getNodes(const ContainerOrNode& start,
+                                   bool interprocedural = true,
                                    unsigned expected_num = 0)
     {
         ++dfsnum;
@@ -202,8 +208,32 @@ public:
             bool visited(PSNode *n) const { return n->dfsid == dfsnum; }
         };
 
+         // iterate over successors and call (return) edges
+        struct EdgeChooser {
+            const bool interproc;
+            EdgeChooser(bool inter = true) : interproc(inter) {}
+
+            void foreach(PSNode *cur, std::function<void(PSNode *)> Dispatch) {
+                if (interproc) {
+                    if (PSNodeCall *C = PSNodeCall::get(cur)) {
+                        for (auto subg : C->getCallees()) {
+                            Dispatch(subg->root);
+                        }
+                    } else if (PSNodeRet *R = PSNodeRet::get(cur)) {
+                        for (auto ret : R->getReturnSites()) {
+                            Dispatch(ret);
+                        }
+                    }
+                } else {
+                    for (auto s : cur->getSuccessors())
+                        Dispatch(s);
+                }
+            }
+        };
+
         DfsIdTracker visitTracker(dfsnum);
-        BFS<PSNode, DfsIdTracker> bfs(visitTracker);
+        EdgeChooser chooser(interprocedural);
+        BFS<PSNode, DfsIdTracker, EdgeChooser> bfs(visitTracker, chooser);
 
         bfs.run(start, [&cont](PSNode *n) { cont.push_back(n); });
 
@@ -217,7 +247,8 @@ public:
 // stop at node 'exit' (excluding) if not set to null
 inline std::set<PSNode *>
 getReachableNodes(PSNode *n,
-                  PSNode *exit = nullptr)
+                  PSNode *exit = nullptr,
+				  bool interproc = true)
 {
     ADT::QueueFIFO<PSNode *> fifo;
     std::set<PSNode *> cont;
@@ -237,6 +268,22 @@ getReachableNodes(PSNode *n,
                 continue;
 
             fifo.push(succ);
+        }
+
+        if (interproc) {
+            if (PSNodeCall *C = PSNodeCall::get(cur)) {
+                for (auto subg : C->getCallees()) {
+                    if (subg->root == exit)
+                        continue;
+                    fifo.push(subg->root);
+                }
+            } else if (PSNodeRet *R = PSNodeRet::get(cur)) {
+                for (auto ret : R->getReturnSites()) {
+                    if (ret == exit)
+                        continue;
+                    fifo.push(ret);
+                }
+            }
         }
     }
 
