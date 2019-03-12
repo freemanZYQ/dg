@@ -93,7 +93,7 @@ class LLVMPointerGraphBuilder
     // map of all nodes we created - use to look up operands
     std::unordered_map<const llvm::Value *, PSNodesSeq > nodes_map;
     // map of all built subgraphs - the value type is a pair (root, return)
-    std::unordered_map<const llvm::Function *, PointerSubgraph> subgraphs_map;
+    std::unordered_map<const llvm::Function *, PointerSubgraph *> subgraphs_map;
 
     std::map<PSNode *, PSNodeFork *> threadCreateCalls;
     std::map<PSNode *, PSNodeJoin *> threadJoinCalls;
