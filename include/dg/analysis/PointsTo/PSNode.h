@@ -471,8 +471,10 @@ public:
     }
 };
 
+class PointerSubgraph;
+
 class PSNodeCall : public PSNode {
-    std::vector<PointerGraph *> callees;
+    std::vector<PointerSubgraph *> callees;
 
 public:
     PSNodeCall(unsigned id)
@@ -483,12 +485,12 @@ public:
             static_cast<PSNodeCall *>(n) : nullptr;
     }
 
-    const std::vector<PointerGraph *>& getCallees() const { return callees; }
+    const std::vector<PointerSubgraph *>& getCallees() const { return callees; }
 
-    bool addCalee(PointerGraph *ps) {
+    bool addCallee(PointerSubgraph *ps) {
         // we suppose there are just few callees,
         // so this should be faster than std::set
-        for (PointerGraph *p : callees) {
+        for (PointerSubgraph *p : callees) {
             if (p == ps)
                 return false;
         }
