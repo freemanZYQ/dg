@@ -71,6 +71,8 @@ class PointerGraph
 
     GenericCallGraph<PSNode *> callGraph;
 
+    PSNode * _globalNodes;
+
 public:
     PointerGraph() : dfsnum(0), root(nullptr) {
         // nodes[0] represents invalid node (the node with id 0)
@@ -186,6 +188,17 @@ public:
         nodes.emplace_back(node);
         return node;
     }
+
+    // set the first global. It is assumed that the globals are
+    // connected by successors edges in the order in which they
+    // should be processed
+    void setGlobals(PSNode *n) {
+        _globalNodes = n;
+    }
+
+    PSNode *firstGlobal() { return _globalNodes; }
+    const PSNode *firstGlobal() const { return _globalNodes; }
+
 
     // get nodes in BFS order and store them into
     // the container

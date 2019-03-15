@@ -373,7 +373,7 @@ public:
 
 
 // check type of node
-template <PSNodeType T> bool isa(PSNode *n) {
+template <PSNodeType T> bool isa(const PSNode *n) {
     return n->getType() == T;
 }
 
@@ -397,6 +397,11 @@ public:
             static_cast<PSNodeAlloc *>(n) : nullptr;
     }
 
+    static const PSNodeAlloc *get(const PSNode *n) {
+        return isa<PSNodeType::ALLOC>(n) || isa<PSNodeType::DYN_ALLOC>(n) ?
+            static_cast<const PSNodeAlloc *>(n) : nullptr;
+    }
+
     void setZeroInitialized() { zeroInitialized = true; }
     bool isZeroInitialized() const { return zeroInitialized; }
 
@@ -404,7 +409,7 @@ public:
     bool isHeap() const { return is_heap; }
 
     void setIsGlobal() { is_global = true; }
-    bool isGlobal() { return is_global; }
+    bool isGlobal() const { return is_global; }
 };
 
 class PSNodeMemcpy : public PSNode {
