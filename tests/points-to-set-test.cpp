@@ -10,23 +10,30 @@ using dg::analysis::pta::PSNodeType;
 using dg::analysis::pta::Pointer;
 using dg::analysis::pta::PointerSubgraph;
 using dg::analysis::pta::PointsToSet;
+using dg::analysis::pta::SimplePointsToSet;
+using dg::analysis::pta::BitvectorPointsToSet;
+using dg::analysis::pta::BitvectorPointsToSet2;
+using dg::analysis::pta::BitvectorPointsToSet3;
+using dg::analysis::pta::BitvectorPointsToSet4;
 
-TEST_CASE("Querying empty set", "PointsToSet") {
-    PointsToSet B;
+template<typename PTSetT>
+void queryingEmptySet() {
+    PTSetT B;
     REQUIRE(B.empty());
     REQUIRE(B.size() == 0);
 }
-
-TEST_CASE("Add an element", "PointsToSet") {
-    PointsToSet B;
+template<typename PTSetT>
+void addAnElement() {
+    PTSetT B;
     PointerSubgraph PS;
     PSNode* A = PS.create(PSNodeType::ALLOC);
     B.add(Pointer(A, 0));
     REQUIRE(*(B.begin()) == Pointer(A, 0));
 }
 
-TEST_CASE("Add few elements", "PointsToSet") {
-    PointsToSet S;
+template<typename PTSetT>
+void addFewElements() {
+    PTSetT S;
     PointerSubgraph PS;
     PSNode* A = PS.create(PSNodeType::ALLOC);
     REQUIRE(S.add(Pointer(A, 0)) == true);
@@ -36,12 +43,13 @@ TEST_CASE("Add few elements", "PointsToSet") {
     REQUIRE(S.add(Pointer(A, 235235)) == true);
     REQUIRE(S.add(Pointer(A, 22332435235)) == true);
     for (const auto& ptr : S)
-        REQUIRE(ptr.target == A);
+    REQUIRE(ptr.target == A);
     REQUIRE(S.size() == 6);
 }
 
-TEST_CASE("Add few elements 2", "PointsToSet") {
-    PointsToSet S;
+template<typename PTSetT>
+void addFewElements2() {
+    PTSetT S;
     PointerSubgraph PS;
     PSNode* A = PS.create(PSNodeType::ALLOC);
     PSNode* B = PS.create(PSNodeType::ALLOC);
@@ -66,9 +74,10 @@ TEST_CASE("Add few elements 2", "PointsToSet") {
     REQUIRE(S.size() == 6);
 }
 
-TEST_CASE("Merge points-to sets", "PointsToSet") {
-    PointsToSet S1;
-    PointsToSet S2;
+template<typename PTSetT>
+void mergePointsToSets() {
+    PTSetT S1;
+    PTSetT S2;
     PointerSubgraph PS;
     PSNode* A = PS.create(PSNodeType::ALLOC);
     PSNode* B = PS.create(PSNodeType::ALLOC);
@@ -83,3 +92,47 @@ TEST_CASE("Merge points-to sets", "PointsToSet") {
     REQUIRE(S1.size() == 2);
 }
 
+TEST_CASE("Querying empty set", "PointsToSet") {
+    queryingEmptySet<PointsToSet>();
+    queryingEmptySet<SimplePointsToSet>();
+    queryingEmptySet<BitvectorPointsToSet>();
+    queryingEmptySet<BitvectorPointsToSet2>();
+    queryingEmptySet<BitvectorPointsToSet3>();
+    queryingEmptySet<BitvectorPointsToSet4>();
+}
+
+TEST_CASE("Add an element", "PointsToSet") {
+    addAnElement<PointsToSet>();
+    addAnElement<SimplePointsToSet>();
+    addAnElement<BitvectorPointsToSet>();
+    addAnElement<BitvectorPointsToSet2>();
+    addAnElement<BitvectorPointsToSet3>();
+    addAnElement<BitvectorPointsToSet4>();
+}
+
+TEST_CASE("Add few elements", "PointsToSet") {
+    addFewElements<PointsToSet>();
+    addFewElements<SimplePointsToSet>();
+    addFewElements<BitvectorPointsToSet>();
+    addFewElements<BitvectorPointsToSet2>();
+    addFewElements<BitvectorPointsToSet3>();
+    addFewElements<BitvectorPointsToSet4>();
+}
+
+TEST_CASE("Add few elements 2", "PointsToSet") {
+    addFewElements2<PointsToSet>();
+    addFewElements2<SimplePointsToSet>();
+    addFewElements2<BitvectorPointsToSet>();
+    addFewElements2<BitvectorPointsToSet2>();
+    addFewElements2<BitvectorPointsToSet3>();
+    addFewElements2<BitvectorPointsToSet4>();
+}
+
+TEST_CASE("Merge points-to sets", "PointsToSet") {
+    mergePointsToSets<PointsToSet>();
+    mergePointsToSets<SimplePointsToSet>();
+    mergePointsToSets<BitvectorPointsToSet>();
+    mergePointsToSets<BitvectorPointsToSet2>();
+    mergePointsToSets<BitvectorPointsToSet3>();
+    mergePointsToSets<BitvectorPointsToSet4>();
+}
