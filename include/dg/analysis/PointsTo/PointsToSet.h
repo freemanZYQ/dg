@@ -6,6 +6,7 @@
 
 #include <map>
 #include <set>
+#include <vector>
 #include <cassert>
 
 namespace dg {
@@ -365,11 +366,13 @@ class BitvectorPointsToSet {
     ADT::SparseBitvector nodes;
     ADT::SparseBitvector offsets;
     static std::map<PSNode*,size_t> ids;
+    static std::vector<PSNode*> idVector; //starts from 0 for now
 
     size_t getNodeID(PSNode *node) const {
         auto it = ids.find(node);
         if(it != ids.end())
             return it->second;
+        idVector.push_back(node);
         return ids.emplace_hint(it, node, ids.size() + 1)->second;
     }
     
@@ -454,24 +457,31 @@ public:
         offsets.swap(rhs.offsets);
     }
     
-    class const_iterator { //not finished yet
-        typename ADT::SparseBitvector::const_iterator container_it;
-        typename ADT::SparseBitvector::const_iterator nodes_end_it;
-        typename ADT::SparseBitvector::const_iterator offsets_begin_it;
+    class const_iterator {
+        typename ADT::SparseBitvector::const_iterator nodes_it;
+        typename ADT::SparseBitvector::const_iterator nodes_end;
+        typename ADT::SparseBitvector::const_iterator offsets_it;
+        typename ADT::SparseBitvector::const_iterator offsets_begin;
+        typename ADT::SparseBitvector::const_iterator offsets_end;
 
-        const_iterator(const ADT::SparseBitvector& nodes, const ADT::SparseBitvector& offsets, bool end = false)
-        : container_it(end ? offsets.end() : nodes.begin()),
-        nodes_end_it(nodes.end()),
-        offsets_begin_it(offsets.begin()) {
-            if(container_it == nodes.end()) {
-                container_it = offsets.begin();
+        const_iterator(const ADT::SparseBitvector& nodes, const ADT::SparseBitvector& offsets, bool end = false) :
+        nodes_it(end ? nodes.end() : nodes.begin()),
+        nodes_end(nodes.end()),
+        offsets_it(offsets.begin()),
+        offsets_begin(offsets.begin()),
+        offsets_end(offsets.end()) {
+            if(nodes_it == nodes_end) {
+                offsets_it = offsets_end;
             }
         }
     public:
         const_iterator& operator++() {
-            container_it++;
-            if(container_it == nodes_end_it) {
-                container_it = offsets_begin_it;
+            offsets_it++;
+            if(offsets_it == offsets_end) {
+                nodes_it++;
+                if(nodes_it != nodes_end) {
+                    offsets_it = offsets_begin;
+                }
             }
             return *this;
         }
@@ -482,12 +492,13 @@ public:
             return tmp;
         }
 
-        size_t operator*() const {
-            return *container_it;
+        Pointer operator*() const {
+            return Pointer(idVector[*nodes_it - 1], *offsets_it);
         }
 
         bool operator==(const const_iterator& rhs) const {
-            return container_it == rhs.container_it;
+            return nodes_it == rhs.nodes_it
+                    && offsets_it == rhs.offsets_it;
         }
 
         bool operator!=(const const_iterator& rhs) const {
@@ -507,13 +518,13 @@ public:
 class BitvectorPointsToSet2 {
     ADT::SparseBitvector pointers;
     static std::map<Pointer, size_t> ids;
+    static std::vector<Pointer> idVector; //starts from 0 for now
     
-    using const_iterator = typename ADT::SparseBitvector::const_iterator;
-
     size_t getPointerID(Pointer ptr) const {
         auto it = ids.find(ptr);
         if(it != ids.end())
             return it->second;
+        idVector.push_back(ptr);
         return ids.emplace_hint(it, ptr, ids.size() + 1)->second;
     }
     
@@ -598,8 +609,42 @@ public:
         pointers.swap(rhs.pointers);
     }
     
-    const_iterator begin() const { return pointers.begin(); }
-    const_iterator end() const { return pointers.end(); }
+    class const_iterator {
+        typename ADT::SparseBitvector::const_iterator container_it;
+
+        const_iterator(const ADT::SparseBitvector& pointers, bool end = false) :
+        container_it(end ? pointers.end() : pointers.begin()) {}
+    public:
+        const_iterator& operator++() {
+            container_it++;
+            return *this;
+        }
+
+        const_iterator operator++(int) {
+            auto tmp = *this;
+            operator++();
+            return tmp;
+        }
+
+        Pointer operator*() const {
+            return Pointer(idVector[*container_it - 1]);
+        }
+
+        bool operator==(const const_iterator& rhs) const {
+            return container_it == rhs.container_it;
+        }
+
+        bool operator!=(const const_iterator& rhs) const {
+            return !operator==(rhs);
+        }
+
+        friend class BitvectorPointsToSet2;
+    };
+
+    const_iterator begin() const { return const_iterator(pointers); }
+    const_iterator end() const { return const_iterator(pointers, true /* end */); }
+
+    friend class const_iterator;
 };
 
 class BitvectorPointsToSet3 {
@@ -607,11 +652,13 @@ class BitvectorPointsToSet3 {
     ADT::SparseBitvector pointers;
     std::set<Pointer> largePointers;
     static std::map<PSNode*,size_t> ids;
+    static std::vector<PSNode*> idVector; //starts from 0 for now
 
     size_t getNodeID(PSNode *node) const {
         auto it = ids.find(node);
         if(it != ids.end())
             return it->second;
+        idVector.push_back(node);
         return ids.emplace_hint(it, node, ids.size() + 1)->second;
     }
     
@@ -735,14 +782,17 @@ public:
         largePointers.swap(rhs.largePointers);
     }
     
-    class const_iterator { //not finished yet
+    class const_iterator {
         typename ADT::SparseBitvector::const_iterator bitvector_it;
         typename ADT::SparseBitvector::const_iterator bitvector_end;
         typename std::set<Pointer>::const_iterator set_it;
         bool secondContainer = false;
 
         const_iterator(const ADT::SparseBitvector& pointers, const std::set<Pointer>& largePointers, bool end = false)
-        : bitvector_it(pointers.begin()), bitvector_end(pointers.end()), set_it(end ? largePointers.end() : largePointers.begin()), secondContainer(end) {
+        : bitvector_it(pointers.begin()), 
+        bitvector_end(pointers.end()), 
+        set_it(end ? largePointers.end() : largePointers.begin()), 
+        secondContainer(end) {
             if(bitvector_it == pointers.end()) {
                 secondContainer = true;
             }
@@ -769,9 +819,8 @@ public:
         Pointer operator*() const { //not finished yet
             if(!secondContainer) {
                 size_t offsetID = *bitvector_it % 64;
-                size_t nodeID = (*bitvector_it - offsetID) / 64;
-                PSNode *node; /*= get node using nodeID*/
-                return offsetID == 63 ? Pointer(node, Offset::UNKNOWN) : Pointer(node, offsetID);  
+                size_t nodeID = ((*bitvector_it - offsetID) / 64) + 1;
+                return offsetID == 63 ? Pointer(idVector[nodeID - 1], Offset::UNKNOWN) : Pointer(idVector[nodeID - 1], offsetID);  
             }
             return *set_it;
         }
@@ -802,11 +851,13 @@ class BitvectorPointsToSet4 {
     ADT::SparseBitvector pointers;
     std::set<Pointer> oddPointers;
     static std::map<PSNode*,size_t> ids;
+    static std::vector<PSNode*> idVector; //starts from 0 for now
 
     size_t getNodeID(PSNode *node) const {
         auto it = ids.find(node);
         if(it != ids.end())
             return it->second;
+        idVector.push_back(node);
         return ids.emplace_hint(it, node, ids.size() + 1)->second;
     }
     
@@ -944,7 +995,10 @@ public:
         bool secondContainer = false;
 
         const_iterator(const ADT::SparseBitvector& pointers, const std::set<Pointer>& oddPointers, bool end = false)
-        : bitvector_it(pointers.begin()), bitvector_end(pointers.end()), set_it(end ? oddPointers.end() : oddPointers.begin()), secondContainer(end) {
+        : bitvector_it(pointers.begin()),
+        bitvector_end(pointers.end()),
+        set_it(end ? oddPointers.end() : oddPointers.begin()),
+        secondContainer(end) {
             if(bitvector_it == pointers.end()) {
                 secondContainer = true;
             }
@@ -970,10 +1024,9 @@ public:
 
         Pointer operator*() const { //not finished yet
             if(!secondContainer) {
-                size_t offsetID = (*bitvector_it % 64) * multiplier;
-                size_t nodeID = (*bitvector_it - (*bitvector_it % 64)) / 64;
-                PSNode *node; /*= get node using nodeID*/
-                return offsetID == 63 ? Pointer(node, Offset::UNKNOWN) : Pointer(node, offsetID);  
+                size_t offsetPosition = (*bitvector_it % 64);
+                size_t nodeID = ((*bitvector_it - offsetPosition) / 64) + 1;
+                return offsetPosition == 63 ? Pointer(idVector[nodeID - 1], Offset::UNKNOWN) : Pointer(idVector[nodeID - 1], offsetPosition * multiplier);  
             }
             return *set_it;
         }
