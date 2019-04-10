@@ -9,7 +9,7 @@ namespace dg {
 namespace analysis {
 namespace rd {
 
-RDNode UNKNOWN_MEMLOC;
+RDNode UNKNOWN_MEMLOC{};
 RDNode *UNKNOWN_MEMORY = &UNKNOWN_MEMLOC;
 
 

@@ -30,9 +30,11 @@ dumpMap(RDNode *node)
 template <typename RDType>
 void basic1()
 {
-    RDNode AL1, AL2;
-    RDNode S1, S2;
-    RDNode U1, U2, U3, U4, U5;
+    using NodeT = DFRDNode;
+    NodeT AL1(RDNodeType::ALLOC), AL2(RDNodeType::ALLOC);
+    NodeT S1(RDNodeType::STORE), S2(RDNodeType::STORE);
+    NodeT U1(RDNodeType::LOAD), U2(RDNodeType::LOAD),
+          U3(RDNodeType::LOAD), U4(RDNodeType::LOAD), U5(RDNodeType::LOAD);
 
     S1.addDef(&AL1, 0, 2, true /* strong update */);
     S2.addDef(&AL1, 0, 4, true /* strong update */);
@@ -80,9 +82,11 @@ void basic1()
 template <typename RDType>
 void basic2()
 {
-    RDNode AL1, AL2;
-    RDNode S1, S2;
-    RDNode U1, U2, U3, U4, U5;
+    using NodeT = DFRDNode;
+    NodeT AL1(RDNodeType::ALLOC), AL2(RDNodeType::ALLOC);
+    NodeT S1(RDNodeType::STORE), S2(RDNodeType::STORE);
+    NodeT U1(RDNodeType::LOAD), U2(RDNodeType::LOAD),
+          U3(RDNodeType::LOAD), U4(RDNodeType::LOAD), U5(RDNodeType::LOAD);
 
     S1.addDef(&AL1, 0, 4, true /* strong update */);
     S2.addDef(&AL1, 0, 4, true /* strong update */);
@@ -129,9 +133,13 @@ void basic2()
 template <typename RDType>
 void basic3()
 {
-    RDNode AL1, AL2;
-    RDNode S1, S2;
-    RDNode U1, U2, U3, U4, U5, U6, U7, U8, U9;
+    using NodeT = DFRDNode;
+    NodeT AL1(RDNodeType::ALLOC), AL2(RDNodeType::ALLOC);
+    NodeT S1(RDNodeType::STORE), S2(RDNodeType::STORE);
+    NodeT U1(RDNodeType::LOAD), U2(RDNodeType::LOAD),
+          U3(RDNodeType::LOAD), U4(RDNodeType::LOAD), U5(RDNodeType::LOAD),
+          U6(RDNodeType::LOAD), U7(RDNodeType::LOAD), U8(RDNodeType::LOAD),
+          U9(RDNodeType::LOAD);
 
     S1.addDef(&AL1, 0, 4, true /* strong update */);
     S2.addDef(&AL1, 4, 4, true /* strong update */);
@@ -201,9 +209,13 @@ void basic3()
 template <typename RDType>
 void basic4()
 {
-    RDNode AL1, AL2;
-    RDNode S1, S2;
-    RDNode U1, U2, U3, U4, U5, U6, U7, U8, U9;
+    using NodeT = DFRDNode;
+    NodeT AL1(RDNodeType::ALLOC), AL2(RDNodeType::ALLOC);
+    NodeT S1(RDNodeType::STORE), S2(RDNodeType::STORE);
+    NodeT U1(RDNodeType::LOAD), U2(RDNodeType::LOAD),
+          U3(RDNodeType::LOAD), U4(RDNodeType::LOAD), U5(RDNodeType::LOAD),
+          U6(RDNodeType::LOAD), U7(RDNodeType::LOAD), U8(RDNodeType::LOAD),
+          U9(RDNodeType::LOAD);
 
     S1.addDef(&AL1, 0, 4, true /* strong update */);
     S2.addDef(&AL1, 2, 4, true /* strong update */);

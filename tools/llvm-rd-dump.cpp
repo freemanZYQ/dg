@@ -56,6 +56,11 @@ using llvm::errs;
 static bool verbose = false;
 static const char *entryFunc = "main";
 
+enum class RdaType {
+    DATAFLOW,
+    SSA
+} rda = RdaType::DATAFLOW;
+
 static std::string
 getInstName(const llvm::Value *val)
 {
@@ -143,7 +148,10 @@ printName(RDNode *node, bool dot)
 static void
 dumpMap(RDNode *node, bool dot = false)
 {
-    RDMap& map = node->def_map;
+    if (rda != RdaType::DATAFLOW)
+        return;
+
+    RDMap& map = DFRDNode::get(node)->def_map;
     for (const auto& it : map) {
         for (RDNode *site : it.second) {
             printName(it.first.target, dot);
@@ -323,10 +331,12 @@ static void dumpDotWithBlocks(LLVMReachingDefinitions *RD) {
         }
 
         // dump def-use edges
-        for(RDNode *node : I->getNodes()) {
-            for (RDNode *def : node->defuse) {
-                printf("\tNODE%p->NODE%p [style=dotted]",
-                       static_cast<void*>(def), static_cast<void*>(node));
+        if (rda == RdaType::SSA) {
+            for(RDNode *node : I->getNodes()) {
+                for (RDNode *def : SSARDNode::get(node)->defuse) {
+                    printf("\tNODE%p->NODE%p [style=dotted]",
+                           static_cast<void*>(def), static_cast<void*>(node));
+                }
             }
         }
         printf("label=\"\\nblock: %p\\n", *I);
@@ -398,11 +408,6 @@ int main(int argc, char *argv[])
         FLOW_INSENSITIVE,
     } type = FLOW_INSENSITIVE;
 
-    enum class RdaType {
-        DENSE,
-        SEMISPARSE
-    } rda = RdaType::DENSE;
-
     // parse options
     for (int i = 1; i < argc; ++i) {
         // run given points-to analysis
@@ -410,8 +415,8 @@ int main(int argc, char *argv[])
             if (strcmp(argv[i+1], "fs") == 0)
                 type = FLOW_SENSITIVE;
         } else if (strcmp(argv[i], "-rda") == 0) {
-            if (strcmp(argv[i+1], "ss") == 0)
-                rda = RdaType::SEMISPARSE;
+            if (strcmp(argv[i+1], "ssa") == 0)
+                rda = RdaType::SSA;
         } else if (strcmp(argv[i], "-pta-field-sensitive") == 0) {
             field_senitivity = static_cast<Offset::type>(atoll(argv[i + 1]));
         } else if (strcmp(argv[i], "-rd-max-set-size") == 0) {
@@ -477,7 +482,7 @@ int main(int argc, char *argv[])
 
     LLVMReachingDefinitions RD(M, &PTA, opts);
     tm.start();
-    if (rda == RdaType::SEMISPARSE) {
+    if (rda == RdaType::SSA) {
         RD.run<dg::analysis::rd::SSAReachingDefinitionsAnalysis>();
     } else
         RD.run<dg::analysis::rd::ReachingDefinitionsAnalysis>();
