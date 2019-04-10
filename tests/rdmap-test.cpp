@@ -18,13 +18,12 @@ RDNode A;
 RDNode B;
 RDNode C;
 
-TEST_CASE("Querying empty set", "DisjunctiveIntervalMap") {
+TEST_CASE("Querying empty set", "[RDMap]") {
     RDMap M;
     REQUIRE(M.empty());
 }
 
-/*
-TEST_CASE("Singleton set", "DisjunctiveIntervalMap") {
+TEST_CASE("Singleton set", "[RDMap]") {
     RDMap M;
 
     M.add(DefSite(&A, 0, 4), &B);
@@ -54,7 +53,7 @@ TEST_CASE("Singleton set", "DisjunctiveIntervalMap") {
     }
 }
 
-TEST_CASE("2-elem set", "DisjunctiveIntervalMap") {
+TEST_CASE("2-elem set", "[RDMap]") {
     RDMap M;
 
     M.add(DefSite(&A, 0, 2), &B);
@@ -85,7 +84,7 @@ TEST_CASE("2-elem set", "DisjunctiveIntervalMap") {
     }
 }
 
-TEST_CASE("iterator", "DisjunctiveIntervalMap") {
+TEST_CASE("iterator", "[RDMap]") {
     RDMap M;
 
     REQUIRE(M.begin() == M.begin());
@@ -114,6 +113,5 @@ TEST_CASE("iterator", "DisjunctiveIntervalMap") {
     REQUIRE(it == M.end());
     REQUIRE(it != M.begin());
 }
-*/
 
 
