@@ -27,7 +27,8 @@ bool ReachingDefinitionsAnalysis::processNode(RDNode *node)
 
     // merge maps from predecessors
     for (RDNode *n : node->predecessors)
-        changed |= node->def_map.merge(&n->def_map,
+        changed |= DFRDNode::get(node)->def_map.merge(
+                                       &DFRDNode::get(n)->def_map,
                                        &node->overwrites /* strong update */,
                                        options.strongUpdateUnknown,
                                        *options.maxSetSize, /* max size of set of reaching definition
@@ -75,8 +76,9 @@ ReachingDefinitionsAnalysis::getReachingDefinitions(RDNode *where, RDNode *mem,
 {
     std::set<RDNode *> ret;
     // gather all possible definitions of the memory
-    where->def_map.get(UNKNOWN_MEMORY, Offset::UNKNOWN, Offset::UNKNOWN, ret);
-    where->def_map.get(mem, off, len, ret);
+    DFRDNode::get(where)->def_map.get(
+                UNKNOWN_MEMORY, Offset::UNKNOWN, Offset::UNKNOWN, ret);
+    DFRDNode::get(where)->def_map.get(mem, off, len, ret);
 
     return std::vector<RDNode *>(ret.begin(), ret.end());
 }
@@ -87,10 +89,12 @@ ReachingDefinitionsAnalysis::getReachingDefinitions(RDNode *use) {
 
     // gather all possible definitions of the memory including the unknown mem
     for (auto& ds : use->uses) {
-        use->def_map.get(ds.target, ds.offset, ds.len, ret);
+        DFRDNode::get(use)->def_map.get(
+                                    ds.target, ds.offset, ds.len, ret);
     }
 
-    use->def_map.get(UNKNOWN_MEMORY, Offset::UNKNOWN, Offset::UNKNOWN, ret);
+    DFRDNode::get(use)->def_map.get(
+                UNKNOWN_MEMORY, Offset::UNKNOWN, Offset::UNKNOWN, ret);
 
     return std::vector<RDNode *>(ret.begin(), ret.end());
 }
@@ -207,7 +211,8 @@ void SSAReachingDefinitionsAnalysis::performLvn(RDBBlock *block) {
             // since this is just weak update,
             // look for the previous definitions of 'ds'
             // and if there are none, add a PHI node
-            node->defuse.add(findDefinitionsInBlock(block, ds));
+            SSARDNode::get(node)->defuse.add(
+                                    findDefinitionsInBlock(block, ds));
 
             // NOTE: this must be after findDefinitionsInBlock, otherwise
             // also this definition will be found
@@ -216,7 +221,8 @@ void SSAReachingDefinitionsAnalysis::performLvn(RDBBlock *block) {
 
         // use
         for (auto& ds : node->uses) {
-            node->defuse.add(findDefinitionsInBlock(block, ds));
+            SSARDNode::get(node)->defuse.add(
+                                    findDefinitionsInBlock(block, ds));
         }
     }
 }
@@ -244,7 +250,7 @@ void SSAReachingDefinitionsAnalysis::performGvn() {
             auto old_phis_size = _phis.size();
 
             // find definitions of this memory in the predecessor blocks
-            phi->defuse.add(findDefinitions(*I, ds));
+            SSARDNode::get(phi)->defuse.add(findDefinitions(*I, ds));
 
             // Queue the new phi (if any) for processing.
             if (_phis.size() != old_phis_size) {
@@ -262,7 +268,7 @@ static void recGatherNonPhisDefs(RDNode *phi, std::set<RDNode *>& phis, std::set
     if (!phis.insert(phi).second)
         return; // we already visited this phi
 
-    for (auto n : phi->defuse) {
+    for (auto n : SSARDNode::get(phi)->defuse) {
         if (n->getType() != RDNodeType::PHI) {
             ret.insert(n);
         } else {
@@ -276,7 +282,7 @@ static std::vector<RDNode *> gatherNonPhisDefs(RDNode *use) {
     std::set<RDNode *> ret; // use set to get rid of duplicates
     std::set<RDNode *> phis; // set of visited phi nodes - to check the fixpoint
 
-    for (auto n : use->defuse) {
+    for (auto n : SSARDNode::get(use)->defuse) {
         if (n->getType() != RDNodeType::PHI) {
             ret.insert(n);
         } else {

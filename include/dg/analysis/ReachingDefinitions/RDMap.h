@@ -67,8 +67,7 @@ struct GenericDefSite
     GenericDefSite(NodeT *t,
                    const Offset& o = Offset::UNKNOWN,
                    const Offset& l = Offset::UNKNOWN)
-        : target(t), offset(o), len(l)
-    {
+        : target(t), offset(o), len(l) {
         assert((o.isUnknown() || l.isUnknown() ||
                *o + *l > 0) && "Invalid offset and length given");
     }
@@ -85,11 +84,11 @@ struct GenericDefSite
     }
 
     // what memory this node defines
-    NodeT *target;
+    NodeT *target{nullptr};
     // on what offset
-    Offset offset;
+    Offset offset{0};
     // how many bytes
-    Offset len;
+    Offset len{Offset::UNKNOWN};
 };
 
 // for compatibility until we need to change it

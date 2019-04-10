@@ -49,54 +49,23 @@ extern RDNode *UNKNOWN_MEMORY;
 class RDBBlock;
 
 class RDNode : public SubgraphNode<RDNode> {
-    RDNodeType type;
 
-    RDBBlock *bblock = nullptr;
+    RDNodeType type{RDNodeType::NONE};
+
+    RDBBlock *bblock{nullptr};
     // marks for DFS/BFS
-    unsigned int dfsid;
-
-    class DefUses {
-        using T = std::vector<RDNode *>;
-        T defuse;
-    public:
-        bool add(RDNode *d) {
-            for (auto x : defuse) {
-                if (x == d) {
-                    return false;
-                }
-            }
-            defuse.push_back(d);
-            return true;
-        }
-
-        template <typename Cont>
-        bool add(const Cont& C) {
-            bool changed = false;
-            for (RDNode *n : C)
-                changed |= add(n);
-            return changed;
-        }
-
-        operator std::vector<RDNode *>() { return defuse; }
-
-        T::iterator begin() { return defuse.begin(); }
-        T::iterator end() { return defuse.end(); }
-        T::const_iterator begin() const { return defuse.begin(); }
-        T::const_iterator end() const { return defuse.end(); }
-    };
+    unsigned int dfsid{0};
 
 public:
 
     // for invalid nodes like UNKNOWN_MEMLOC
     RDNode(RDNodeType t = RDNodeType::NONE)
-    : SubgraphNode<RDNode>(0), type(t), dfsid(0) {}
+    : SubgraphNode<RDNode>(0), type(t) {}
 
     RDNode(unsigned id, RDNodeType t = RDNodeType::NONE)
-    : SubgraphNode<RDNode>(id), type(t), dfsid(0) {}
+    : SubgraphNode<RDNode>(id), type(t) {}
 
-#ifndef NDEBUG
     virtual ~RDNode() = default;
-#endif
 
     // weak update
     DefSiteSetT defs;
@@ -105,14 +74,6 @@ public:
 
     // this is set of variables used in this node
     DefSiteSetT uses;
-
-    // places where this node is defined
-    // (so this node has non-empty uses)
-    DefUses defuse;
-
-    // state of the data-flow analysis
-    // FIXME: get rid of this in a general node
-    RDMap def_map;
 
     RDNodeType getType() const { return type; }
     DefSiteSetT& getDefines() { return defs; }
@@ -168,9 +129,6 @@ public:
             overwrites.insert(ds);
         else
             defs.insert(ds);
-
-        // TODO: Get rid of this!
-        def_map.update(ds, this);
     }
 
     ///
@@ -221,6 +179,83 @@ public:
     void setBBlock(RDBBlock *bb) { bblock = bb; }
 
     friend class ReachingDefinitionsAnalysis;
+};
+
+///
+// Data-flow RD node
+class DFRDNode : public RDNode {
+    friend class ReachingDefinitionsAnalysis;
+
+public:
+
+    DFRDNode(RDNodeType t = RDNodeType::NONE)
+    : RDNode(0, t){}
+
+    DFRDNode(unsigned id, RDNodeType t = RDNodeType::NONE)
+    : RDNode(id, t){}
+
+    static DFRDNode *get(RDNode *n) {
+        assert(n->getType() != RDNodeType::NONE);
+        assert(n != UNKNOWN_MEMORY);
+        return static_cast<DFRDNode *>(n);
+    }
+
+    // state of the data-flow analysis
+    RDMap def_map{};
+};
+
+///
+// MemorySSA RD node
+class SSARDNode : public RDNode {
+    friend class SSAReachingDefinitionsAnalysis;
+
+    class DefUses {
+        using T = std::vector<RDNode *>;
+        T defuse;
+    public:
+        bool add(RDNode *d) {
+            for (auto x : defuse) {
+                if (x == d) {
+                    return false;
+                }
+            }
+            defuse.push_back(d);
+            return true;
+        }
+
+        template <typename Cont>
+        bool add(const Cont& C) {
+            bool changed = false;
+            for (RDNode *n : C)
+                changed |= add(n);
+            return changed;
+        }
+
+        operator std::vector<RDNode *>() { return defuse; }
+
+        T::iterator begin() { return defuse.begin(); }
+        T::iterator end() { return defuse.end(); }
+        T::const_iterator begin() const { return defuse.begin(); }
+        T::const_iterator end() const { return defuse.end(); }
+    };
+
+public:
+
+    SSARDNode(RDNodeType t = RDNodeType::NONE)
+    : RDNode(0, t){}
+
+    SSARDNode(unsigned id, RDNodeType t = RDNodeType::NONE)
+    : RDNode(id, t){}
+
+    static SSARDNode *get(RDNode *n) {
+        assert(n->getType() != RDNodeType::NONE);
+        assert(n != UNKNOWN_MEMORY);
+        return static_cast<SSARDNode *>(n);
+    }
+
+    // places where this node is defined
+    // (so this node has non-empty uses)
+    DefUses defuse{};
 };
 
 } // namespace rd

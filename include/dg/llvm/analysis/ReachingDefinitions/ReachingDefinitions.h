@@ -42,8 +42,8 @@ class LLVMReachingDefinitions
     dg::LLVMPointerAnalysis *pta;
     const LLVMReachingDefinitionsAnalysisOptions _options;
 
-    void initializeSparseRDA();
-    void initializeDenseRDA();
+    void initializeSSARDA();
+    void initializeDataFlowRDA();
 
 public:
 
@@ -66,9 +66,9 @@ public:
                       "RdaType has to be subclass of ReachingDefinitionsAnalysis");
 
         if (std::is_same<RdaType, SSAReachingDefinitionsAnalysis>::value) {
-            initializeSparseRDA();
+            initializeSSARDA();
         } else {
-            initializeDenseRDA();
+            initializeDataFlowRDA();
         }
 
         assert(builder);

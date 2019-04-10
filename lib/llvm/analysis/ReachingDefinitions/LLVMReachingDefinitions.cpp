@@ -27,7 +27,8 @@ LLVMReachingDefinitions::~LLVMReachingDefinitions() {
     delete builder;
 }
 
-void LLVMReachingDefinitions::initializeSparseRDA() {
+void LLVMReachingDefinitions::initializeSSARDA() {
+    assert(_options.isSSA() && "Inconsistent settings");
     builder = new LLVMRDBuilder(m, pta, _options);
     // let the compiler do copy-ellision
     auto graph = builder->build();
@@ -36,7 +37,8 @@ void LLVMReachingDefinitions::initializeSparseRDA() {
                     new SSAReachingDefinitionsAnalysis(std::move(graph)));
 }
 
-void LLVMReachingDefinitions::initializeDenseRDA() {
+void LLVMReachingDefinitions::initializeDataFlowRDA() {
+    assert(_options.isDataFlow() && "Inconsistent settings");
     builder = new LLVMRDBuilder(m, pta, _options,
                                 true /* forget locals at return */);
     auto graph = builder->build();

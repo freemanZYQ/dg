@@ -137,7 +137,7 @@ RDNode *LLVMRDBuilder::createRealloc(const llvm::Instruction *Inst)
 
     // realloc defines itself, since it copies the values
     // from previous memory
-    node->addDef(node, 0, size, false /* strong update */);
+    addDefinition(node, node, 0, size, false /* strong update */);
 
     if (buildUses) {
         // realloc copies the memory
@@ -285,7 +285,7 @@ RDNode *LLVMRDBuilder::createStore(const llvm::Instruction *Inst)
     }
 
     for (const auto& ds : defSites) {
-        node->addDef(ds, strong_update);
+        addDefinition(node, ds, strong_update);
     }
 
     assert(node);
@@ -614,7 +614,7 @@ RDNode *LLVMRDBuilder::createUndefinedCall(const llvm::CallInst *CInst)
             assert(target && "Don't have pointer target for call argument");
 
             // this call may use and define this memory
-            node->addDef(target, Offset::UNKNOWN, Offset::UNKNOWN);
+            addDefinition(node, target, Offset::UNKNOWN, Offset::UNKNOWN);
             node->addUse(target, Offset::UNKNOWN, Offset::UNKNOWN);
         }
     }
@@ -676,7 +676,7 @@ RDNode *LLVMRDBuilder::createIntrinsicCall(const llvm::CallInst *CInst)
             // as ALLOC in points-to, so we can have
             // reaching definitions to that
             ret = create(RDNodeType::CALL);
-            ret->addDef(ret, 0, Offset::UNKNOWN);
+            addDefinition(ret, ret, 0, Offset::UNKNOWN);
             addNode(CInst, ret);
             return ret;
         default:
@@ -723,7 +723,7 @@ RDNode *LLVMRDBuilder::createIntrinsicCall(const llvm::CallInst *CInst)
         assert(target && "Don't have pointer target for intrinsic call");
 
         // add the definition
-        ret->addDef(target, from, to, true /* strong update */);
+        addDefinition(ret, target, from, to, true /* strong update */);
     }
 
     return ret;
@@ -777,7 +777,7 @@ RDNode *LLVMRDBuilder::funcFromModel(const FunctionModel *model, const llvm::Cal
                 bool strong_updt = pts.second.size() == 1 && !ptr.offset.isUnknown()
                                    && !llvm::isa<llvm::CallInst>(ptr.value);
                 // FIXME: what about vars in recursive functions?
-                node->addDef(target, from, to, strong_updt);
+                addDefinition(node, target, from, to, strong_updt);
             }
             if (auto uses = model->uses(i)) {
                 std::tie(from, to) = getFromTo(CInst, uses);
@@ -985,7 +985,7 @@ std::pair<RDNode *, RDNode *> LLVMRDBuilder::buildGlobals()
             if (size == 0)
                 size = Offset::UNKNOWN;
 
-            cur->addDef(cur, 0, size, true /* strong update */);
+            addDefinition(cur, cur, 0, size, true /* strong update */);
         }
 
         if (prev)

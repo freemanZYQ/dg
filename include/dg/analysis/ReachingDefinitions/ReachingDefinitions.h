@@ -135,6 +135,12 @@ public:
       return _nodes.back().get();
     }
 
+    RDNode *add(RDNode *nd) {
+      nd->setID(++lastNodeID);
+      _nodes.emplace_back(nd);
+      return nd;
+    }
+
     void buildBBlocks();
 };
 

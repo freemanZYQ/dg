@@ -67,7 +67,28 @@ protected:
     // map of all built subgraphs - the value type is a pair (root, return)
     std::unordered_map<const llvm::Value *, Subgraph> subgraphs_map;
 
-    RDNode *create(RDNodeType t) { return graph.create(t); }
+    RDNode *create(RDNodeType t) {
+        if (_options.isSSA())
+            return graph.add(new SSARDNode(t));
+        else
+            return graph.add(new DFRDNode(t));
+    }
+
+    void addDefinition(RDNode *n, RDNode *target,
+                       const Offset& off = Offset::UNKNOWN,
+                       const Offset& len = Offset::UNKNOWN,
+                       bool strong_update = false) {
+        addDefinition(n, {target, off, len}, strong_update);
+    }
+
+    void addDefinition(RDNode *n, const DefSite& ds,
+                       bool strong_update = false) {
+        if (_options.isDataFlow()) {
+            DFRDNode::get(n)->def_map.update(ds, n);
+        }
+
+        n->addDef(ds, strong_update);
+    }
 
 public:
     LLVMRDBuilderBase(const llvm::Module *m,

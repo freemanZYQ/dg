@@ -72,6 +72,7 @@ public:
 #endif
 
     unsigned int getID() const { return id; }
+    void setID(unsigned i) { id = i; }
 
     void setSize(size_t s) { size = s; }
     size_t getSize() const { return size; }
