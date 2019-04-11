@@ -22,6 +22,7 @@ void queryingEmptySet() {
     REQUIRE(B.empty());
     REQUIRE(B.size() == 0);
 }
+
 template<typename PTSetT>
 void addAnElement() {
     PTSetT B;
@@ -46,6 +47,7 @@ void addFewElements() {
     REQUIRE(ptr.target == A);
     REQUIRE(S.size() == 6);
 }
+
 
 template<typename PTSetT>
 void addFewElements2() {
