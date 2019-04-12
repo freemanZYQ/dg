@@ -11,10 +11,10 @@ using dg::analysis::pta::Pointer;
 using dg::analysis::pta::PointerSubgraph;
 using dg::analysis::pta::PointsToSet;
 using dg::analysis::pta::SimplePointsToSet;
-using dg::analysis::pta::BitvectorPointsToSet;
-using dg::analysis::pta::BitvectorPointsToSet2;
-using dg::analysis::pta::BitvectorPointsToSet3;
-using dg::analysis::pta::BitvectorPointsToSet4;
+using dg::analysis::pta::SeparateOffsetsPointsToSet;
+using dg::analysis::pta::SingleBitvectorPointsToSet;
+using dg::analysis::pta::SmallOffsetsPointsToSet;
+using dg::analysis::pta::DivisibleOffsetsPointsToSet;
 
 template<typename PTSetT>
 void queryingEmptySet() {
@@ -97,44 +97,44 @@ void mergePointsToSets() {
 TEST_CASE("Querying empty set", "PointsToSet") {
     queryingEmptySet<PointsToSet>();
     queryingEmptySet<SimplePointsToSet>();
-    queryingEmptySet<BitvectorPointsToSet>();
-    queryingEmptySet<BitvectorPointsToSet2>();
-    queryingEmptySet<BitvectorPointsToSet3>();
-    queryingEmptySet<BitvectorPointsToSet4>();
+    queryingEmptySet<SeparateOffsetsPointsToSet>();
+    queryingEmptySet<SingleBitvectorPointsToSet>();
+    queryingEmptySet<SmallOffsetsPointsToSet>();
+    queryingEmptySet<DivisibleOffsetsPointsToSet>();
 }
 
 TEST_CASE("Add an element", "PointsToSet") {
     addAnElement<PointsToSet>();
     addAnElement<SimplePointsToSet>();
-    addAnElement<BitvectorPointsToSet>();
-    addAnElement<BitvectorPointsToSet2>();
-    addAnElement<BitvectorPointsToSet3>();
-    addAnElement<BitvectorPointsToSet4>();
+    addAnElement<SeparateOffsetsPointsToSet>();
+    addAnElement<SingleBitvectorPointsToSet>();
+    addAnElement<SmallOffsetsPointsToSet>();
+    addAnElement<DivisibleOffsetsPointsToSet>();
 }
 
 TEST_CASE("Add few elements", "PointsToSet") {
     addFewElements<PointsToSet>();
     addFewElements<SimplePointsToSet>();
-    addFewElements<BitvectorPointsToSet>();
-    addFewElements<BitvectorPointsToSet2>();
-    addFewElements<BitvectorPointsToSet3>();
-    addFewElements<BitvectorPointsToSet4>();
+    addFewElements<SeparateOffsetsPointsToSet>();
+    addFewElements<SingleBitvectorPointsToSet>();
+    addFewElements<SmallOffsetsPointsToSet>();
+    addFewElements<DivisibleOffsetsPointsToSet>();
 }
 
 TEST_CASE("Add few elements 2", "PointsToSet") {
     addFewElements2<PointsToSet>();
     addFewElements2<SimplePointsToSet>();
-    addFewElements2<BitvectorPointsToSet>();
-    addFewElements2<BitvectorPointsToSet2>();
-    addFewElements2<BitvectorPointsToSet3>();
-    addFewElements2<BitvectorPointsToSet4>();
+    addFewElements2<SeparateOffsetsPointsToSet>();
+    addFewElements2<SingleBitvectorPointsToSet>();
+    addFewElements2<SmallOffsetsPointsToSet>();
+    addFewElements2<DivisibleOffsetsPointsToSet>();
 }
 
 TEST_CASE("Merge points-to sets", "PointsToSet") {
     mergePointsToSets<PointsToSet>();
     mergePointsToSets<SimplePointsToSet>();
-    mergePointsToSets<BitvectorPointsToSet>();
-    mergePointsToSets<BitvectorPointsToSet2>();
-    mergePointsToSets<BitvectorPointsToSet3>();
-    mergePointsToSets<BitvectorPointsToSet4>();
+    mergePointsToSets<SeparateOffsetsPointsToSet>();
+    mergePointsToSets<SingleBitvectorPointsToSet>();
+    mergePointsToSets<SmallOffsetsPointsToSet>();
+    mergePointsToSets<DivisibleOffsetsPointsToSet>();
 }

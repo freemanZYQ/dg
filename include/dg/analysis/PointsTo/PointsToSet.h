@@ -362,7 +362,7 @@ public:
     const_iterator end() const { return pointers.end(); }
 };
 
-class BitvectorPointsToSet {
+class SeparateOffsetsPointsToSet {
     ADT::SparseBitvector nodes;
     ADT::SparseBitvector offsets;
     static std::map<PSNode*,size_t> ids;
@@ -386,7 +386,7 @@ public:
         return add(ptr.target, ptr.offset);
     }
 
-    bool add(const BitvectorPointsToSet& S) {
+    bool add(const SeparateOffsetsPointsToSet& S) {
         bool changed = nodes.set(S.nodes);
         return offsets.set(S.offsets) || changed;
     }
@@ -452,7 +452,7 @@ public:
         return nodes.size() * offsets.size();
     }
 
-    void swap(BitvectorPointsToSet& rhs) {
+    void swap(SeparateOffsetsPointsToSet& rhs) {
         nodes.swap(rhs.nodes);
         offsets.swap(rhs.offsets);
     }
@@ -505,7 +505,7 @@ public:
             return !operator==(rhs);
         }
 
-        friend class BitvectorPointsToSet;
+        friend class SeparateOffsetsPointsToSet;
     };
 
     const_iterator begin() const { return const_iterator(nodes, offsets); }
@@ -515,7 +515,7 @@ public:
     
 };
 
-class BitvectorPointsToSet2 {
+class SingleBitvectorPointsToSet {
     ADT::SparseBitvector pointers;
     static std::map<Pointer, size_t> ids;
     static std::vector<Pointer> idVector; //starts from 0 for now
@@ -537,7 +537,7 @@ public:
         return !pointers.set(getPointerID(ptr));
     }
 
-    bool add(const BitvectorPointsToSet2& S) {
+    bool add(const SingleBitvectorPointsToSet& S) {
         return pointers.set(S.pointers);
     }
 
@@ -605,7 +605,7 @@ public:
         return pointers.size();
     }
 
-    void swap(BitvectorPointsToSet2& rhs) {
+    void swap(SingleBitvectorPointsToSet& rhs) {
         pointers.swap(rhs.pointers);
     }
     
@@ -638,7 +638,7 @@ public:
             return !operator==(rhs);
         }
 
-        friend class BitvectorPointsToSet2;
+        friend class SingleBitvectorPointsToSet;
     };
 
     const_iterator begin() const { return const_iterator(pointers); }
@@ -647,7 +647,7 @@ public:
     friend class const_iterator;
 };
 
-class BitvectorPointsToSet3 {
+class SmallOffsetsPointsToSet {
     
     ADT::SparseBitvector pointers;
     std::set<Pointer> largePointers;
@@ -681,7 +681,7 @@ public:
         return add(ptr.target, ptr.offset);
     }
 
-    bool add(const BitvectorPointsToSet3& S) {
+    bool add(const SmallOffsetsPointsToSet& S) {
         bool changed = pointers.set(S.pointers);
         for (const auto& ptr : S.largePointers) {
             changed |= largePointers.insert(ptr).second;
@@ -777,7 +777,7 @@ public:
         return pointers.size() + largePointers.size();
     }
 
-    void swap(BitvectorPointsToSet3& rhs) {
+    void swap(SmallOffsetsPointsToSet& rhs) {
         pointers.swap(rhs.pointers);
         largePointers.swap(rhs.largePointers);
     }
@@ -834,7 +834,7 @@ public:
             return !operator==(rhs);
         }
 
-        friend class BitvectorPointsToSet3;
+        friend class SmallOffsetsPointsToSet;
     };
     
     const_iterator begin() const { return const_iterator(pointers, largePointers); }
@@ -843,7 +843,7 @@ public:
     friend class const_iterator;
 };
 
-class BitvectorPointsToSet4 {
+class DivisibleOffsetsPointsToSet {
     
     static const unsigned int multiplier = 4;
     
@@ -889,7 +889,7 @@ public:
         return add(ptr.target, ptr.offset);
     }
 
-    bool add(const BitvectorPointsToSet4& S) {
+    bool add(const DivisibleOffsetsPointsToSet& S) {
         bool changed = pointers.set(S.pointers);
         for (const auto& ptr : S.oddPointers) {
             changed |= oddPointers.insert(ptr).second;
@@ -982,7 +982,7 @@ public:
         return pointers.size() + oddPointers.size();
     }
 
-    void swap(BitvectorPointsToSet4& rhs) {
+    void swap(DivisibleOffsetsPointsToSet& rhs) {
         pointers.swap(rhs.pointers);
         oddPointers.swap(rhs.oddPointers);
     }
@@ -1039,7 +1039,7 @@ public:
             return !operator==(rhs);
         }
 
-        friend class BitvectorPointsToSet4;
+        friend class DivisibleOffsetsPointsToSet;
     };
 
     const_iterator begin() const { return const_iterator(pointers, oddPointers); }

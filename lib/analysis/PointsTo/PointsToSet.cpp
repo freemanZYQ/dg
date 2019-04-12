@@ -8,14 +8,14 @@
 namespace dg {
 namespace analysis {
 namespace pta {
-    std::vector<PSNode*> BitvectorPointsToSet::idVector;
-    std::vector<Pointer> BitvectorPointsToSet2::idVector;
-    std::vector<PSNode*> BitvectorPointsToSet3::idVector;
-    std::vector<PSNode*> BitvectorPointsToSet4::idVector;
-    std::map<PSNode*,size_t> BitvectorPointsToSet::ids;
-    std::map<Pointer,size_t> BitvectorPointsToSet2::ids;
-    std::map<PSNode*,size_t> BitvectorPointsToSet3::ids;
-    std::map<PSNode*,size_t> BitvectorPointsToSet4::ids;
+    std::vector<PSNode*> SeparateOffsetsPointsToSet::idVector;
+    std::vector<Pointer> SingleBitvectorPointsToSet::idVector;
+    std::vector<PSNode*> SmallOffsetsPointsToSet::idVector;
+    std::vector<PSNode*> DivisibleOffsetsPointsToSet::idVector;
+    std::map<PSNode*,size_t> SeparateOffsetsPointsToSet::ids;
+    std::map<Pointer,size_t> SingleBitvectorPointsToSet::ids;
+    std::map<PSNode*,size_t> SmallOffsetsPointsToSet::ids;
+    std::map<PSNode*,size_t> DivisibleOffsetsPointsToSet::ids;
 } // namespace pta
 } // namespace analysis
 } // namespace debug
