@@ -35,6 +35,9 @@ class SmallOffsetsPointsToSet {
     }
     
 public:
+    SmallOffsetsPointsToSet() = default;
+    SmallOffsetsPointsToSet(std::initializer_list<Pointer> elems) { add(elems); }
+    
     bool add(PSNode *target, Offset off) {
         if(off.isUnknown()) {
             return !pointers.set(getNodePosition(target) + 63); 
@@ -141,6 +144,19 @@ public:
         return count(ptr) > 0;
     }
 
+    bool hasUnknown() const { 
+        return pointsToTarget(UNKNOWN_MEMORY);
+    }
+    
+    bool hasNull() const {
+        return pointsToTarget(NULLPTR);
+    
+    }
+    
+    bool hasInvalidated() const {
+        return pointsToTarget(INVALIDATED);
+    }
+    
     size_t size() const {
         return pointers.size() + largePointers.size();
     }

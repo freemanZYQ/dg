@@ -28,6 +28,9 @@ class SingleBitvectorPointsToSet {
     }
     
 public:
+    SingleBitvectorPointsToSet() = default;
+    SingleBitvectorPointsToSet(std::initializer_list<Pointer> elems) { add(elems); }
+    
     bool add(PSNode *target, Offset off) {
         return add(Pointer(target,off));
     }
@@ -99,7 +102,20 @@ public:
     bool has(const Pointer& ptr) const {
         return count(ptr) > 0;
     }
-
+    
+    bool hasUnknown() const { 
+        return pointsToTarget(UNKNOWN_MEMORY);
+    }
+    
+    bool hasNull() const {
+        return pointsToTarget(NULLPTR);
+    
+    }
+    
+    bool hasInvalidated() const {
+        return pointsToTarget(INVALIDATED);
+    }
+    
     size_t size() const {
         return pointers.size();
     }

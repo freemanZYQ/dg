@@ -49,6 +49,9 @@ class DivisibleOffsetsPointsToSet {
     }
     
 public:
+    DivisibleOffsetsPointsToSet() = default;
+    DivisibleOffsetsPointsToSet(std::initializer_list<Pointer> elems) { add(elems); }
+    
     bool add(PSNode *target, Offset off) {
         if(isOffsetValid(off)) {
             return !pointers.set(getOffsetPosition(target, off));
@@ -150,6 +153,19 @@ public:
         return count(ptr) > 0;
     }
 
+    bool hasUnknown() const { 
+        return pointsToTarget(UNKNOWN_MEMORY);
+    }
+    
+    bool hasNull() const {
+        return pointsToTarget(NULLPTR);
+    
+    }
+    
+    bool hasInvalidated() const {
+        return pointsToTarget(INVALIDATED);
+    }
+    
     size_t size() const {
         return pointers.size() + oddPointers.size();
     }

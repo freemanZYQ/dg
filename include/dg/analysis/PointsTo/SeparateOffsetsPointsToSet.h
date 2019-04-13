@@ -28,6 +28,9 @@ class SeparateOffsetsPointsToSet {
     }
     
 public:
+    SeparateOffsetsPointsToSet() = default;
+    SeparateOffsetsPointsToSet(std::initializer_list<Pointer> elems) { add(elems); }
+    
     bool add(PSNode *target, Offset off) {
         bool changed = !nodes.set(getNodeID(target));
         return !offsets.set(*off) || changed;
@@ -98,7 +101,19 @@ public:
     bool has(const Pointer& ptr) const {
         return count(ptr) > 0;
     }
-
+    
+    bool hasUnknown() const { 
+        return pointsToTarget(UNKNOWN_MEMORY);
+    }
+    
+    bool hasNull() const {
+        return pointsToTarget(NULLPTR);
+    
+    }
+    
+    bool hasInvalidated() const {
+        return pointsToTarget(INVALIDATED);
+    }
     size_t size() const {
         return nodes.size() * offsets.size();
     }
