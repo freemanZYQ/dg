@@ -19,8 +19,6 @@ class SimplePointsToSet {
     using ContainerT = std::set<Pointer>;
     ContainerT pointers;
 
-    using const_iterator = typename ContainerT::const_iterator;
-
     bool addWithUnknownOffset(PSNode *target) {
         if (has({target, Offset::UNKNOWN}))
             return false;
@@ -38,6 +36,8 @@ class SimplePointsToSet {
 public:
     SimplePointsToSet() = default;
     SimplePointsToSet(std::initializer_list<Pointer> elems) { add(elems); }
+    
+    using const_iterator = typename ContainerT::const_iterator;
 
     bool add(PSNode *target, Offset off) {
         if (off.isUnknown())
@@ -136,7 +136,7 @@ public:
     }
 
     size_t count(const Pointer& ptr) { return pointers.count(ptr); }
-    size_t size() { return pointers.size(); }
+    size_t size() const { return pointers.size(); }
     bool empty() const { return pointers.empty(); }
     bool has(const Pointer& ptr) { return count(ptr) > 0; }
     bool hasUnknown() const { return pointsToTarget(UNKNOWN_MEMORY); }
