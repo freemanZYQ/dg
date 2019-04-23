@@ -136,7 +136,8 @@ else()
 				PUBLIC ControlDependence)
 endif(APPLE)
 
-install(TARGETS LLVMdg ThreadRegions LLVMpta LLVMrd PTA RD DGAnalysis
+install(TARGETS LLVMdg ThreadRegions ControlDependence
+                LLVMpta LLVMrd PTA RD DGAnalysis
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 endif(LLVM_DG)
