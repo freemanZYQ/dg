@@ -54,8 +54,9 @@ public:
     bool removeAny(PSNode *target) {
         bool changed = false;
         for(const auto& kv : ids) {
-            if(kv.first.target == target) {
-                changed |= pointers.unset(kv.second);
+            if(kv.first.target == target && has(Pointer(kv.first.target, kv.first.offset))) {
+                changed = true;
+                pointers.unset(kv.second);
             }
         }
         return changed;
