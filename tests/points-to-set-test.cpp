@@ -94,6 +94,90 @@ void mergePointsToSets() {
     REQUIRE(S1.size() == 2);
 }
 
+template<typename PTSetT>
+void removeElement() {
+    PTSetT S;
+    PointerSubgraph PS;
+    PSNode* A = PS.create(PSNodeType::ALLOC);
+
+    REQUIRE(S.add({A, 0}) == true);
+    REQUIRE(S.size() == 1);
+    REQUIRE(S.remove({A, 0}) == true);
+    REQUIRE(S.remove({A, 1}) == false);
+    REQUIRE(S.size() == 0);
+}
+
+template<typename PTSetT>
+void removeFewElements() {
+    PTSetT S;
+    PointerSubgraph PS;
+    PSNode* A = PS.create(PSNodeType::ALLOC);
+    PSNode* B = PS.create(PSNodeType::ALLOC);
+
+    REQUIRE(S.add(Pointer(A, 0)) == true);
+    REQUIRE(S.add(Pointer(A, 16)) == true);
+    REQUIRE(S.add(Pointer(A, 120)) == true);
+    REQUIRE(S.add(Pointer(B, 1240)) == true);
+    REQUIRE(S.add(Pointer(B, 235235)) == true);
+    REQUIRE(S.add(Pointer(B, 22332435235)) == true);
+    REQUIRE(S.remove({A, 0}) == true);
+    REQUIRE(S.remove({A, 120}) == true);
+    REQUIRE(S.remove({B, 22332435235}) == true);
+    REQUIRE(S.size() == 3);
+}
+
+template<typename PTSetT>
+void removeAnyTest() {
+    PTSetT S;
+    PointerSubgraph PS;
+    PSNode* A = PS.create(PSNodeType::ALLOC);
+    PSNode* B = PS.create(PSNodeType::ALLOC);
+
+    REQUIRE(S.add(Pointer(A, 0)) == true);
+    REQUIRE(S.add(Pointer(A, 16)) == true);
+    REQUIRE(S.add(Pointer(A, 120)) == true);
+    REQUIRE(S.add(Pointer(B, 1240)) == true);
+    REQUIRE(S.add(Pointer(B, 235235)) == true);
+    REQUIRE(S.add(Pointer(B, 22332435235)) == true);
+    REQUIRE(S.removeAny(A) == true);
+    REQUIRE(S.removeAny(A) == false);
+    REQUIRE(S.size() == 3);
+    REQUIRE(S.removeAny(B) == true);
+    REQUIRE(S.size() == 0);
+    REQUIRE(S.removeAny(B) == false);
+}
+
+template<typename PTSetT>
+void pointsToTest() {
+    PTSetT S;
+    PointerSubgraph PS;
+    PSNode* A = PS.create(PSNodeType::ALLOC);
+    PSNode* B = PS.create(PSNodeType::ALLOC);
+    S.add(Pointer(A, 0));
+    REQUIRE(S.pointsTo(Pointer(A, 0)) == true);
+    REQUIRE(S.mayPointTo(Pointer(A, 0)) == true);
+    REQUIRE(S.mustPointTo(Pointer(A, 0)) == true);
+    S.add(Pointer(A, 8));
+    S.add(Pointer(A, 64));
+    S.add(Pointer(B, 123));
+    REQUIRE(S.pointsTo(Pointer(A, 0)) == true);
+    REQUIRE(S.mayPointTo(Pointer(A, 0)) == true);
+    REQUIRE(S.mustPointTo(Pointer(A, 0)) == false);
+    REQUIRE(S.pointsTo(Pointer(A, 64)) == true);
+    REQUIRE(S.mayPointTo(Pointer(A, 64)) == true);
+    REQUIRE(S.mustPointTo(Pointer(A, 64)) == false);   
+    REQUIRE(S.pointsTo(Pointer(B, 123)) == true);
+    REQUIRE(S.mayPointTo(Pointer(B, 123)) == true);
+    REQUIRE(S.mustPointTo(Pointer(B, 123)) == false);
+    REQUIRE(S.mayPointTo(Pointer(A,10000)) == false);
+    REQUIRE(S.mustPointTo(Pointer(A,10000)) == false);
+    REQUIRE(S.pointsTo(Pointer(A,10000)) == false);
+    S.add(Pointer(A, dg::analysis::Offset::UNKNOWN));
+    REQUIRE(S.pointsTo(Pointer(A, 0)) == false);
+    REQUIRE(S.mayPointTo(Pointer(A, 0)) == true);
+    REQUIRE(S.mustPointTo(Pointer(A, 0)) == false);
+}
+
 TEST_CASE("Querying empty set", "PointsToSet") {
     queryingEmptySet<PointsToSet>();
     queryingEmptySet<SimplePointsToSet>();
@@ -138,3 +222,38 @@ TEST_CASE("Merge points-to sets", "PointsToSet") {
     mergePointsToSets<SmallOffsetsPointsToSet>();
     mergePointsToSets<DivisibleOffsetsPointsToSet>();
 }
+
+TEST_CASE("Remove element", "PointsToSet") { //SeparateOffsetsPointsToSet has different remove behavior, it isn't tested here
+    removeElement<PointsToSet>();
+    removeElement<SimplePointsToSet>();
+    removeElement<SingleBitvectorPointsToSet>();
+    removeElement<SmallOffsetsPointsToSet>();
+    removeElement<DivisibleOffsetsPointsToSet>();
+}
+
+TEST_CASE("Remove few elements", "PointsToSet") { //SeparateOffsetsPointsToSet has different remove behavior, it isn't tested here
+    removeFewElements<PointsToSet>();
+    removeFewElements<SimplePointsToSet>();
+    removeFewElements<SingleBitvectorPointsToSet>();
+    removeFewElements<SmallOffsetsPointsToSet>();
+    removeFewElements<DivisibleOffsetsPointsToSet>();
+}
+
+TEST_CASE("Remove all elements pointing to a target", "PointsToSet") { //SeparateOffsetsPointsToSet has different behavior, it isn't tested here
+    removeAnyTest<PointsToSet>();
+    removeAnyTest<SimplePointsToSet>();
+    removeAnyTest<SingleBitvectorPointsToSet>();
+    removeAnyTest<SmallOffsetsPointsToSet>();
+    removeAnyTest<DivisibleOffsetsPointsToSet>();
+}
+
+TEST_CASE("Test various points-to functions", "PointsToSet") {
+    pointsToTest<PointsToSet>();
+    pointsToTest<SimplePointsToSet>();
+    pointsToTest<SeparateOffsetsPointsToSet>();
+    pointsToTest<SingleBitvectorPointsToSet>();
+    pointsToTest<SmallOffsetsPointsToSet>();
+    pointsToTest<DivisibleOffsetsPointsToSet>();
+}
+
+
