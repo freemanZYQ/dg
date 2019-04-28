@@ -24,8 +24,9 @@ class SmallOffsetsPointsToSet {
 
     size_t getNodeID(PSNode *node) const {
         auto it = ids.find(node);
-        if(it != ids.end())
+        if(it != ids.end()) {
             return it->second;
+        }
         idVector.push_back(node);
         return ids.emplace_hint(it, node, ids.size() + 1)->second;
     }
@@ -34,15 +35,34 @@ class SmallOffsetsPointsToSet {
         return ((getNodeID(node) - 1) * 64);
     }
     
+    size_t getPosition(PSNode *node, Offset off) const {
+        if(off.isUnknown()) {
+            return getNodePosition(node) + 63;
+        }
+        return getNodePosition(node) + *off;
+    }
+    
+    bool isOffsetValid(Offset off) const {
+         return off.isUnknown() 
+                || *off <= 62;
+    }
+    
+    bool addWithUnknownOffset(PSNode *target) {
+        removeAny(target);
+        return !pointers.set(getPosition(target, Offset::UNKNOWN));
+    }
+    
 public:
     SmallOffsetsPointsToSet() = default;
     SmallOffsetsPointsToSet(std::initializer_list<Pointer> elems) { add(elems); }
     
     bool add(PSNode *target, Offset off) {
-        if(off.isUnknown()) {
-            return !pointers.set(getNodePosition(target) + 63); 
-        } else if(off < 63) {
-            return !pointers.set(getNodePosition(target) + off.offset);
+        if(has({target, Offset::UNKNOWN})) {
+            return false;
+        } else if(off.isUnknown()) {
+            return addWithUnknownOffset(target);
+        } else if(isOffsetValid(off)) {
+            return !pointers.set(getPosition(target,off));
         } else {
             return largePointers.emplace(target, off).second;
         }
@@ -61,13 +81,10 @@ public:
     }
 
     bool remove(const Pointer& ptr) {
-        if(ptr.offset.isUnknown()) {
-            return pointers.unset(getNodePosition(ptr.target) + 63); 
-        } else if(ptr.offset < 63) {
-            return pointers.unset(getNodePosition(ptr.target) + ptr.offset.offset);
-        } else {
-            return largePointers.erase(ptr) != 0;
+        if(isOffsetValid(ptr.offset)) {
+            return pointers.unset(getPosition(ptr.target, ptr.offset)); 
         }
+        return largePointers.erase(ptr) != 0;
     }
     
     bool remove(PSNode *target, Offset offset) {
@@ -99,8 +116,10 @@ public:
     }
    
     bool pointsTo(const Pointer& ptr) const {
-        return pointers.get(getNodePosition(ptr.target) + ptr.offset.offset)
-                || largePointers.find(ptr) != largePointers.end();
+        if(isOffsetValid(ptr.offset)) {
+            return pointers.get(getPosition(ptr.target, ptr.offset));
+        }
+        return largePointers.find(ptr) != largePointers.end();
     }
 
     bool mayPointTo(const Pointer& ptr) const {
@@ -231,4 +250,3 @@ public:
 } // namespace dg
 
 #endif /* SMALLOFFSETSPOINTSTOSET_H */
-
