@@ -169,7 +169,6 @@ public:
     
     bool hasNull() const {
         return pointsToTarget(NULLPTR);
-    
     }
     
     bool hasInvalidated() const {
@@ -186,6 +185,7 @@ public:
     }
     
     class const_iterator {
+        
         typename ADT::SparseBitvector::const_iterator bitvector_it;
         typename ADT::SparseBitvector::const_iterator bitvector_end;
         typename std::set<Pointer>::const_iterator set_it;
@@ -200,6 +200,7 @@ public:
                 secondContainer = true;
             }
         }
+        
     public:
         const_iterator& operator++() {
             if(!secondContainer) {
