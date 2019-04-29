@@ -26,8 +26,9 @@ class DivisibleOffsetsPointsToSet {
 
     size_t getNodeID(PSNode *node) const {
         auto it = ids.find(node);
-        if(it != ids.end())
+        if(it != ids.end()) {
             return it->second;
+        }
         idVector.push_back(node);
         return ids.emplace_hint(it, node, ids.size() + 1)->second;
     }
@@ -36,7 +37,7 @@ class DivisibleOffsetsPointsToSet {
         return ((getNodeID(node) - 1) * 64);
     }
     
-    size_t getOffsetPosition(PSNode *node, Offset off) const {
+    size_t getPosition(PSNode *node, Offset off) const {
         if(off.isUnknown()) {
             return getNodePosition(node) + 63;
         }
@@ -48,16 +49,26 @@ class DivisibleOffsetsPointsToSet {
                 || (*off <= 62 * multiplier && *off % multiplier == 0);
     }
     
+    bool addWithUnknownOffset(PSNode *target) {
+        removeAny(target);
+        return !pointers.set(getPosition(target, Offset::UNKNOWN));
+    }
+    
 public:
     DivisibleOffsetsPointsToSet() = default;
     DivisibleOffsetsPointsToSet(std::initializer_list<Pointer> elems) { add(elems); }
     
     bool add(PSNode *target, Offset off) {
+        if(has({target, Offset::UNKNOWN})) {
+            return false;
+        }
+        if(off.isUnknown()) {
+            return addWithUnknownOffset(target);
+        }
         if(isOffsetValid(off)) {
-            return !pointers.set(getOffsetPosition(target, off));
+            return !pointers.set(getPosition(target, off));
         }
         return oddPointers.emplace(target,off).second;
-        
     }
 
     bool add(const Pointer& ptr) {
@@ -74,7 +85,7 @@ public:
 
     bool remove(const Pointer& ptr) {
         if(isOffsetValid(ptr.offset)) {
-            return pointers.unset(getOffsetPosition(ptr.target, ptr.offset)); 
+            return pointers.unset(getPosition(ptr.target, ptr.offset)); 
         }
         return oddPointers.erase(ptr) != 0;
     }
@@ -108,8 +119,10 @@ public:
     }
    
     bool pointsTo(const Pointer& ptr) const {
-        return pointers.get(getOffsetPosition(ptr.target,ptr.offset))
-                || oddPointers.find(ptr) != oddPointers.end();
+        if(isOffsetValid(ptr.offset)) {
+            return pointers.get(getPosition(ptr.target,ptr.offset));
+        }
+        return oddPointers.find(ptr) != oddPointers.end();
     }
 
     bool mayPointTo(const Pointer& ptr) const {
@@ -159,7 +172,6 @@ public:
     
     bool hasNull() const {
         return pointsToTarget(NULLPTR);
-    
     }
     
     bool hasInvalidated() const {
@@ -176,6 +188,7 @@ public:
     }
     
     class const_iterator {
+        
         typename ADT::SparseBitvector::const_iterator bitvector_it;
         typename ADT::SparseBitvector::const_iterator bitvector_end;
         typename std::set<Pointer>::const_iterator set_it;
@@ -189,7 +202,8 @@ public:
             if(bitvector_it == bitvector_end) {
                 secondContainer = true;
             }
-        }        
+        }
+        
     public:
         const_iterator& operator++() {
             if(!secondContainer) {
@@ -241,4 +255,3 @@ public:
 } // namespace dg
 
 #endif /* DIVISIBLEOFFSETSPOINTSTOSET_H */
-
