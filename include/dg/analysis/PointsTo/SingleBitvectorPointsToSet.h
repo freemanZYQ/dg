@@ -15,16 +15,23 @@ namespace pta {
 class PSNode;
 
 class SingleBitvectorPointsToSet {
+    
     ADT::SparseBitvector pointers;
     static std::map<Pointer, size_t> ids;
     static std::vector<Pointer> idVector; //starts from 0 for now
     
-    size_t getPointerID(Pointer ptr) const {
+    size_t getPointerID(const Pointer& ptr) const {
         auto it = ids.find(ptr);
-        if(it != ids.end())
+        if(it != ids.end()) {
             return it->second;
+        }
         idVector.push_back(ptr);
         return ids.emplace_hint(it, ptr, ids.size() + 1)->second;
+    }
+    
+    bool addWithUnknownOffset(PSNode* node) {
+        removeAny(node);
+        return !pointers.set(getPointerID({node, Offset::UNKNOWN}));
     }
     
 public:
@@ -36,6 +43,12 @@ public:
     }
 
     bool add(const Pointer& ptr) {
+        if(has({ptr.target, Offset::UNKNOWN})) {
+            return false;
+        }
+        if(ptr.offset.isUnknown()) {
+            return addWithUnknownOffset(ptr.target);
+        }
         return !pointers.set(getPointerID(ptr));
     }
 
@@ -53,10 +66,10 @@ public:
     
     bool removeAny(PSNode *target) {
         bool changed = false;
-        for(const auto& kv : ids) {
-            if(kv.first.target == target && has(Pointer(kv.first.target, kv.first.offset))) {
+        for(const auto& ptrID : pointers) {
+            if(idVector[ptrID - 1].target == target) {
                 changed = true;
-                pointers.unset(kv.second);
+                pointers.unset(ptrID);
             }
         }
         return changed;
@@ -71,7 +84,8 @@ public:
     }
 
     bool mayPointTo(const Pointer& ptr) const {
-        return pointsTo(ptr) || pointsTo(Pointer(ptr.target, Offset::UNKNOWN));
+        return pointsTo(ptr)
+                || pointsTo(Pointer(ptr.target, Offset::UNKNOWN));
     }
 
     bool mustPointTo(const Pointer& ptr) const {
@@ -126,10 +140,12 @@ public:
     }
     
     class const_iterator {
+        
         typename ADT::SparseBitvector::const_iterator container_it;
 
         const_iterator(const ADT::SparseBitvector& pointers, bool end = false) :
         container_it(end ? pointers.end() : pointers.begin()) {}
+        
     public:
         const_iterator& operator++() {
             container_it++;
@@ -168,4 +184,3 @@ public:
 } // namespace dg
 
 #endif /* SINGLEBITVECTORPOINTSTOSET_H */
-
