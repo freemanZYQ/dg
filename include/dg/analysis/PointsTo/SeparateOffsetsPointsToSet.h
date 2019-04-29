@@ -14,6 +14,7 @@ namespace pta {
 class PSNode;
 
 class SeparateOffsetsPointsToSet {
+    
     ADT::SparseBitvector nodes;
     ADT::SparseBitvector offsets;
     static std::map<PSNode*,size_t> ids;
@@ -21,8 +22,9 @@ class SeparateOffsetsPointsToSet {
 
     size_t getNodeID(PSNode *node) const {
         auto it = ids.find(node);
-        if(it != ids.end())
+        if(it != ids.end()) {
             return it->second;
+        }
         idVector.push_back(node);
         return ids.emplace_hint(it, node, ids.size() + 1)->second;
     }
@@ -32,6 +34,12 @@ public:
     SeparateOffsetsPointsToSet(std::initializer_list<Pointer> elems) { add(elems); }
     
     bool add(PSNode *target, Offset off) {
+        if(offsets.get(Offset::UNKNOWN)) {
+            return !nodes.set(getNodeID(target));
+        }
+        if(off.isUnknown()) {
+            offsets.reset();
+        }
         bool changed = !nodes.set(getNodeID(target));
         return !offsets.set(*off) || changed;
     }
@@ -55,13 +63,6 @@ public:
     
     bool removeAny(PSNode *target) {
         abort();
-        /*
-        bool changed = nodes.unset(getNodeID(target));
-        if(nodes.empty()) {
-            offsets.reset();
-        }
-        return changed;
-        */
     }
     
     void clear() { 
@@ -74,7 +75,8 @@ public:
     }
 
     bool mayPointTo(const Pointer& ptr) const {
-        return pointsTo(ptr);
+        return pointsTo(ptr)
+                || pointsTo(Pointer(ptr.target, Offset::UNKNOWN));
     }
 
     bool mustPointTo(const Pointer& ptr) const {
@@ -114,6 +116,7 @@ public:
     bool hasInvalidated() const {
         return pointsToTarget(INVALIDATED);
     }
+    
     size_t size() const {
         return nodes.size() * offsets.size();
     }
@@ -124,6 +127,7 @@ public:
     }
     
     class const_iterator {
+        
         typename ADT::SparseBitvector::const_iterator nodes_it;
         typename ADT::SparseBitvector::const_iterator nodes_end;
         typename ADT::SparseBitvector::const_iterator offsets_it;
@@ -167,6 +171,7 @@ public:
             return nodes_it == rhs.nodes_it
                     && offsets_it == rhs.offsets_it;
         }
+        
         bool operator!=(const const_iterator& rhs) const {
             return !operator==(rhs);
         }
@@ -177,8 +182,7 @@ public:
     const_iterator begin() const { return const_iterator(nodes, offsets); }
     const_iterator end() const { return const_iterator(nodes, offsets, true /* end */); }
 
-    friend class const_iterator;
-    
+    friend class const_iterator;    
 };
     
 } // namespace pta
@@ -186,4 +190,3 @@ public:
 } // namespace dg
 
 #endif /* SEPARATEOFFSETSPOINTSTOSET_H */
-
