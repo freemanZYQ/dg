@@ -17,13 +17,14 @@ class PSNode;
     
 class DivisibleOffsetsPointsToSet {
     
-    static const unsigned int multiplier = 4;
+    static const unsigned int multiplier = 4; //offsets that are divisible by this value are stored in bitvector up to 62 * multiplier
     
     ADT::SparseBitvector pointers;
     std::set<Pointer> oddPointers;
-    static std::map<PSNode*,size_t> ids;
-    static std::vector<PSNode*> idVector; //starts from 0 for now
+    static std::map<PSNode*,size_t> ids;  //nodes are numbered 1,2, ...
+    static std::vector<PSNode*> idVector; //starts from 0 (node = idVector[id - 1])
 
+    //if the node doesn't have ID, it's assigned one
     size_t getNodeID(PSNode *node) const {
         auto it = ids.find(node);
         if(it != ids.end()) {
@@ -187,6 +188,7 @@ public:
         oddPointers.swap(rhs.oddPointers);
     }
     
+    //iterates over the bitvector first, then over the set
     class const_iterator {
         
         typename ADT::SparseBitvector::const_iterator bitvector_it;
