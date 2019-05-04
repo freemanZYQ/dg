@@ -17,9 +17,10 @@ class SeparateOffsetsPointsToSet {
     
     ADT::SparseBitvector nodes;
     ADT::SparseBitvector offsets;
-    static std::map<PSNode*,size_t> ids;
-    static std::vector<PSNode*> idVector; //starts from 0 for now
+    static std::map<PSNode*,size_t> ids;  //nodes are numbered 1, 2, ...
+    static std::vector<PSNode*> idVector; //starts from 0 (node = idVector[id - 1])
 
+    //if the node doesn't have ID, it is assigned one
     size_t getNodeID(PSNode *node) const {
         auto it = ids.find(node);
         if(it != ids.end()) {
@@ -126,6 +127,7 @@ public:
         offsets.swap(rhs.offsets);
     }
     
+    //iterates through all the possible combinations of nodes and their offsets stored in this points-to set
     class const_iterator {
         
         typename ADT::SparseBitvector::const_iterator nodes_it;
