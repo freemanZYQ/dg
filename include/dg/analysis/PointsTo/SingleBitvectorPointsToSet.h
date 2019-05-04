@@ -17,9 +17,10 @@ class PSNode;
 class SingleBitvectorPointsToSet {
     
     ADT::SparseBitvector pointers;
-    static std::map<Pointer, size_t> ids;
-    static std::vector<Pointer> idVector; //starts from 0 for now
+    static std::map<Pointer, size_t> ids; //pointers are numbered 1, 2, ...
+    static std::vector<Pointer> idVector; //starts from 0 (pointer = idVector[id - 1])
     
+    //if the pointer doesn't have ID, it's assigned one
     size_t getPointerID(const Pointer& ptr) const {
         auto it = ids.find(ptr);
         if(it != ids.end()) {
