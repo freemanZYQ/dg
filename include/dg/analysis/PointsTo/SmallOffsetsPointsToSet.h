@@ -19,9 +19,10 @@ class SmallOffsetsPointsToSet {
     
     ADT::SparseBitvector pointers;
     std::set<Pointer> largePointers;
-    static std::map<PSNode*,size_t> ids;
-    static std::vector<PSNode*> idVector; //starts from 0 for now
+    static std::map<PSNode*,size_t> ids;  //nodes are numbered 1,2, ...
+    static std::vector<PSNode*> idVector; //starts from 0 (node = idVector[id - 1])
 
+    //if the node doesn't have ID, it's assigned one
     size_t getNodeID(PSNode *node) const {
         auto it = ids.find(node);
         if(it != ids.end()) {
@@ -184,6 +185,7 @@ public:
         largePointers.swap(rhs.largePointers);
     }
     
+    //iterates over the bitvector first, then over the set
     class const_iterator {
         
         typename ADT::SparseBitvector::const_iterator bitvector_it;
