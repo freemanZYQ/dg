@@ -365,7 +365,7 @@ dumpStats(LLVMPointerAnalysis *pta)
                                     static_cast<double>(nonempty_size));
     avg_overflow_set_size += (accumulated_overflow_set_size /
                             static_cast<double>(nodes.size()-1));
-    avg_nonempty_ptset_size += (accumulated_overflow_set_size /
+    avg_nonempty_overflow_set_size += (accumulated_overflow_set_size /
                                     static_cast<double>(nonempty_overflow_set_size));
     printf("Average pt-set size: %6.3f\n", avg_ptset_size);
     printf("Average non-empty pt-set size: %6.3f\n", avg_nonempty_ptset_size);
