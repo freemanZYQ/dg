@@ -171,6 +171,10 @@ public:
 
     void swap(PointsToSet& rhs) { pointers.swap(rhs.pointers); }
 
+    size_t overflowSetSize() const {
+        return 0;
+    }
+    
     class const_iterator {
         typename ContainerT::const_iterator container_it;
         typename ContainerT::const_iterator container_end;

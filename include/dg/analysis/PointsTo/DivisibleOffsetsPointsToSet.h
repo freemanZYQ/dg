@@ -188,6 +188,10 @@ public:
         oddPointers.swap(rhs.oddPointers);
     }
     
+    size_t overflowSetSize() const {
+        return oddPointers.size();
+    }
+    
     //iterates over the bitvector first, then over the set
     class const_iterator {
         

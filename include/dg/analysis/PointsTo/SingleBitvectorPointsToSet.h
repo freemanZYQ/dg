@@ -140,6 +140,10 @@ public:
         pointers.swap(rhs.pointers);
     }
     
+    size_t overflowSetSize() const {
+        return 0;
+    }
+    
     class const_iterator {
         
         typename ADT::SparseBitvector::const_iterator container_it;

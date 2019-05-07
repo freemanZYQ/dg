@@ -145,6 +145,10 @@ public:
 
     void swap(SimplePointsToSet& rhs) { pointers.swap(rhs.pointers); }
 
+    size_t overflowSetSize() const {
+        return 0;
+    }
+    
     const_iterator begin() const { return pointers.begin(); }
     const_iterator end() const { return pointers.end(); }
 };   

@@ -127,6 +127,10 @@ public:
         offsets.swap(rhs.offsets);
     }
     
+    size_t overflowSetSize() const {
+        return 0;
+    }
+    
     //iterates through all the possible combinations of nodes and their offsets stored in this points-to set
     class const_iterator {
         

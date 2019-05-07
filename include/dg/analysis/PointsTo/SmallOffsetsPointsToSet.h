@@ -185,6 +185,10 @@ public:
         largePointers.swap(rhs.largePointers);
     }
     
+    size_t overflowSetSize() const {
+        return largePointers.size();
+    }
+    
     //iterates over the bitvector first, then over the set
     class const_iterator {
         
