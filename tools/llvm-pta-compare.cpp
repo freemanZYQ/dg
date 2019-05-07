@@ -207,7 +207,9 @@ dumpStats(LLVMPointerAnalysis *pta)
     printf("Pointer subgraph size: %lu\n", nodes.size()-1);
 
     size_t nonempty_size = 0; // number of nodes with non-empty pt-set
+    size_t nonempty_overflow_set_size = 0; //number of nodes with non-empty overflow set
     size_t maximum = 0; // maximum pt-set size
+    size_t maximum_overflow = 0; //maximum size of overflow set in SmallOffsets and DivisibleOffsets
     size_t pointing_to_unknown = 0;
     size_t pointing_only_to_unknown = 0;
     size_t pointing_to_invalidated = 0;
@@ -231,6 +233,9 @@ dumpStats(LLVMPointerAnalysis *pta)
 
         if (node->pointsTo.size() > 0)
             ++nonempty_size;
+        
+        if (node->pointsTo.overflowSetSize() > 0)
+            ++nonempty_overflow_set_size;
 
         if (node->pointsTo.size() == 1) {
             ++singleton_count;
@@ -241,6 +246,9 @@ dumpStats(LLVMPointerAnalysis *pta)
 
         if (node->pointsTo.size() > maximum)
             maximum = node->pointsTo.size();
+        
+        if(node->pointsTo.overflowSetSize() > maximum_overflow)
+            maximum_overflow = node->pointsTo.overflowSetSize();
 
         bool _points_to_only_known_size = true;
         bool _known_offset_only = true;
@@ -322,7 +330,10 @@ dumpStats(LLVMPointerAnalysis *pta)
 
     double avg_ptset_size = 0;
     double avg_nonempty_ptset_size = 0; // avg over non-empty sets only
+    double avg_overflow_set_size = 0; // avg of overflow set size in SmallOffsets and DivisibleOffsets PTSet
+    double avg_nonempty_overflow_set_size = 0;
     size_t accumulated_ptset_size = 0;
+    size_t accumulated_overflow_set_size = 0;
 
     for (auto& node : nodes) {
         if (!node.get())
@@ -336,13 +347,26 @@ dumpStats(LLVMPointerAnalysis *pta)
                                         static_cast<double>(nonempty_size));
             accumulated_ptset_size = 0;
         }
+        if (accumulated_overflow_set_size > (~((size_t) 0)) - node->pointsTo.overflowSetSize()) {
+            printf("Accumulated overflow sets size > 2^64 - 1");
+            avg_overflow_set_size += (accumulated_overflow_set_size /
+                                        static_cast<double>(nodes.size() -1));
+            avg_nonempty_overflow_set_size += (accumulated_overflow_set_size /
+                                        static_cast<double>(nonempty_overflow_set_size));
+            accumulated_overflow_set_size = 0;
+        }
         accumulated_ptset_size += node->pointsTo.size();
+        accumulated_overflow_set_size += node->pointsTo.overflowSetSize();
     }
 
     avg_ptset_size += (accumulated_ptset_size /
                             static_cast<double>(nodes.size()-1));
     avg_nonempty_ptset_size += (accumulated_ptset_size /
                                     static_cast<double>(nonempty_size));
+    avg_overflow_set_size += (accumulated_overflow_set_size /
+                            static_cast<double>(nodes.size()-1));
+    avg_nonempty_ptset_size += (accumulated_overflow_set_size /
+                                    static_cast<double>(nonempty_overflow_set_size));
     printf("Average pt-set size: %6.3f\n", avg_ptset_size);
     printf("Average non-empty pt-set size: %6.3f\n", avg_nonempty_ptset_size);
     printf("Pointing to singleton: %lu\n", singleton_count);
@@ -356,6 +380,9 @@ dumpStats(LLVMPointerAnalysis *pta)
     printf("Pointing to stack: %lu\n", pointing_to_stack);
     printf("Pointing to function: %lu\n", pointing_to_function);
     printf("Maximum pt-set size: %lu\n", maximum);
+    printf("Average overflow set size: %6.3f\n", avg_overflow_set_size);
+    printf("Average non-empty overflow set size: %6.3f\n", avg_nonempty_overflow_set_size);
+    printf("Maximum overflow set size: %lu\n", maximum_overflow);
 }
 
 int main(int argc, char *argv[])
@@ -417,6 +444,7 @@ int main(int argc, char *argv[])
         tm.stop();
         tm.report("INFO: Points-to flow-insensitive analysis took");
         dumpStats(PTAfi);
+        
     }
 
     if (type & FLOW_SENSITIVE) {
