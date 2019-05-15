@@ -150,7 +150,7 @@ public:
     }
 
     size_t containerSize() const {
-        return pointers;
+        return pointers.size();
     }
     
     const_iterator begin() const { return pointers.begin(); }

@@ -210,6 +210,8 @@ dumpStats(LLVMPointerAnalysis *pta)
     size_t nonempty_overflow_set_size = 0; //number of nodes with non-empty overflow set
     size_t maximum = 0; // maximum pt-set size
     size_t maximum_overflow = 0; //maximum size of overflow set in SmallOffsets and DivisibleOffsets
+    size_t maximum_container = 0; //maximum size of overflow set in SmallOffsets and DivisibleOffsets
+    size_t maximum_offset = 0; //maximum size of overflow set in SmallOffsets and DivisibleOffsets
     size_t pointing_to_unknown = 0;
     size_t pointing_only_to_unknown = 0;
     size_t pointing_to_invalidated = 0;
@@ -250,6 +252,9 @@ dumpStats(LLVMPointerAnalysis *pta)
         if(node->pointsTo.overflowSetSize() > maximum_overflow)
             maximum_overflow = node->pointsTo.overflowSetSize();
 
+        if(node->pointsTo.containerSize() > maximum_container)
+            maximum_container = node->pointsTo.containerSize();
+
         bool _points_to_only_known_size = true;
         bool _known_offset_only = true;
         bool _has_known_size_offset = false;
@@ -257,6 +262,8 @@ dumpStats(LLVMPointerAnalysis *pta)
         for (const auto& ptr : node->pointsTo) {
             if (ptr.offset.isUnknown()) {
                 _known_offset_only = false;
+            } else if (*ptr.offset > maximum_offset) {
+                maximum_offset = *ptr.offset;
             }
 
             if (ptr.isUnknown()) {
@@ -365,8 +372,10 @@ dumpStats(LLVMPointerAnalysis *pta)
                                     static_cast<double>(nonempty_size));
     avg_overflow_set_size += (accumulated_overflow_set_size /
                             static_cast<double>(nodes.size()-1));
-    avg_nonempty_overflow_set_size += (accumulated_overflow_set_size /
-                                    static_cast<double>(nonempty_overflow_set_size));
+    if (nonempty_overflow_set_size > 0) {
+        avg_nonempty_overflow_set_size += (accumulated_overflow_set_size /
+                                        static_cast<double>(nonempty_overflow_set_size));
+    }
     printf("Average pt-set size: %6.3f\n", avg_ptset_size);
     printf("Average non-empty pt-set size: %6.3f\n", avg_nonempty_ptset_size);
     printf("Pointing to singleton: %lu\n", singleton_count);
@@ -383,6 +392,8 @@ dumpStats(LLVMPointerAnalysis *pta)
     printf("Average overflow set size: %6.3f\n", avg_overflow_set_size);
     printf("Average non-empty overflow set size: %6.3f\n", avg_nonempty_overflow_set_size);
     printf("Maximum overflow set size: %lu\n", maximum_overflow);
+    printf("Maximum container size: %lu\n", maximum_container);
+    printf("Maximum concrete offset: %lu\n", maximum_offset);
 }
 
 int main(int argc, char *argv[])

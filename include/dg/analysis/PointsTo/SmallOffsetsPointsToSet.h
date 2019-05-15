@@ -190,7 +190,7 @@ public:
     }
 
     size_t containerSize() const {
-        return pointers;
+        return pointers.size();
     }
     
     //iterates over the bitvector first, then over the set

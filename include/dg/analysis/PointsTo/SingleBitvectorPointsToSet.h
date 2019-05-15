@@ -145,7 +145,7 @@ public:
     }
 
     size_t containerSize() const {
-        return pointers;
+        return pointers.size();
     }
     
     class const_iterator {
