@@ -229,6 +229,10 @@ dumpStats(LLVMPointerAnalysis *pta)
     size_t only_valid_target = 0;
     size_t only_valid_and_some_known = 0;
 
+    size_t accumulated_offsets_num = 0;
+    size_t accumulated_unaligned4_offsets_num = 0;
+    size_t accumulated_unaligned8_offsets_num = 0;
+
     for (auto& node : nodes) {
         if (!node.get())
             continue;
@@ -262,8 +266,26 @@ dumpStats(LLVMPointerAnalysis *pta)
         for (const auto& ptr : node->pointsTo) {
             if (ptr.offset.isUnknown()) {
                 _known_offset_only = false;
-            } else if (*ptr.offset > maximum_offset) {
-                maximum_offset = *ptr.offset;
+            } else {
+                if (*ptr.offset > maximum_offset) {
+                    maximum_offset = *ptr.offset;
+                }
+
+                if (ptr.isValid()) {
+                    if (accumulated_offsets_num == ~((size_t) 0)) {
+                        printf("Overflow in offsets number\n");
+                        abort();
+                    }
+                    ++accumulated_offsets_num;
+
+                    if (*ptr.offset % 4 != 0) {
+                        // no overflow check needed, accumulated_offsets_num would
+                        // overflow and abort earlier
+                        ++accumulated_unaligned4_offsets_num;
+                    } if (*ptr.offset % 8 != 0) {
+                        ++accumulated_unaligned8_offsets_num;
+                    }
+                }
             }
 
             if (ptr.isUnknown()) {
@@ -338,9 +360,11 @@ dumpStats(LLVMPointerAnalysis *pta)
     double avg_ptset_size = 0;
     double avg_nonempty_ptset_size = 0; // avg over non-empty sets only
     double avg_overflow_set_size = 0; // avg of overflow set size in SmallOffsets and DivisibleOffsets PTSet
+    double avg_container_size = 0; // avg of overflow set size in SmallOffsets and DivisibleOffsets PTSet
     double avg_nonempty_overflow_set_size = 0;
     size_t accumulated_ptset_size = 0;
     size_t accumulated_overflow_set_size = 0;
+    size_t accumulated_container_size = 0;
 
     for (auto& node : nodes) {
         if (!node.get())
@@ -362,8 +386,16 @@ dumpStats(LLVMPointerAnalysis *pta)
                                         static_cast<double>(nonempty_overflow_set_size));
             accumulated_overflow_set_size = 0;
         }
+        if (accumulated_container_size > (~((size_t) 0)) - node->pointsTo.containerSize()) {
+            printf("Accumulated container size > 2^64 - 1");
+            avg_container_size += (accumulated_container_size /
+                                        static_cast<double>(nodes.size() -1));
+            accumulated_container_size = 0;
+        }
+
         accumulated_ptset_size += node->pointsTo.size();
         accumulated_overflow_set_size += node->pointsTo.overflowSetSize();
+        accumulated_container_size += node->pointsTo.containerSize();
     }
 
     avg_ptset_size += (accumulated_ptset_size /
@@ -371,6 +403,8 @@ dumpStats(LLVMPointerAnalysis *pta)
     avg_nonempty_ptset_size += (accumulated_ptset_size /
                                     static_cast<double>(nonempty_size));
     avg_overflow_set_size += (accumulated_overflow_set_size /
+                            static_cast<double>(nodes.size()-1));
+    avg_container_size += (accumulated_container_size /
                             static_cast<double>(nodes.size()-1));
     if (nonempty_overflow_set_size > 0) {
         avg_nonempty_overflow_set_size += (accumulated_overflow_set_size /
@@ -391,6 +425,10 @@ dumpStats(LLVMPointerAnalysis *pta)
     printf("Maximum pt-set size: %lu\n", maximum);
     printf("Average overflow set size: %6.3f\n", avg_overflow_set_size);
     printf("Average non-empty overflow set size: %6.3f\n", avg_nonempty_overflow_set_size);
+    printf("Average container size: %6.3f\n", avg_container_size);
+    printf("Accumulated number of concrete offsets: %lu\n", accumulated_offsets_num);
+    printf("4-bytes unaligned concrete offsets: %lu\n", accumulated_unaligned4_offsets_num);
+    printf("8-bytes unaligned concrete offsets: %lu\n", accumulated_unaligned8_offsets_num);
     printf("Maximum overflow set size: %lu\n", maximum_overflow);
     printf("Maximum container size: %lu\n", maximum_container);
     printf("Maximum concrete offset: %lu\n", maximum_offset);
