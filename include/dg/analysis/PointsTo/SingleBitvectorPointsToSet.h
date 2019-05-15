@@ -143,6 +143,10 @@ public:
     size_t overflowSetSize() const {
         return 0;
     }
+
+    size_t containerSize() const {
+        return pointers;
+    }
     
     class const_iterator {
         

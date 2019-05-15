@@ -148,6 +148,10 @@ public:
     size_t overflowSetSize() const {
         return 0;
     }
+
+    size_t containerSize() const {
+        return pointers;
+    }
     
     const_iterator begin() const { return pointers.begin(); }
     const_iterator end() const { return pointers.end(); }

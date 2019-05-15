@@ -126,9 +126,13 @@ public:
         nodes.swap(rhs.nodes);
         offsets.swap(rhs.offsets);
     }
+
+    size_t containerSize() const {
+        return nodes.size();
+    }
     
     size_t overflowSetSize() const {
-        return 0;
+        return offsets.size();
     }
     
     //iterates through all the possible combinations of nodes and their offsets stored in this points-to set
